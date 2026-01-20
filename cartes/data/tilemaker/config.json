@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "name": "antananarivo",
+    "description": "Antananarivo basic",
+    "version": "1.0",
+    "minzoom": 6,
+    "maxzoom": 14,
+    "basezoom": 14,
+    "compress": "gzip",
+    "bounding_box": [47.35, -19.05, 47.65, -18.75]
+  },
+  "layers": {
+    "roads": { "minzoom": 6, "maxzoom": 14 },
+    "buildings": { "minzoom": 12, "maxzoom": 14 },
+    "landuse": { "minzoom": 6, "maxzoom": 14 },
+    "water": { "minzoom": 6, "maxzoom": 14 },
+    "waterway": { "minzoom": 8, "maxzoom": 14 },
+    "places": { "minzoom": 8, "maxzoom": 14 }
+  }
+}

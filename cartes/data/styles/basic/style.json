@@ -1,0 +1,231 @@
+{
+  "version": 8,
+  "name": "Antananarivo Basic",
+  "glyphs": "{fontstack}/{range}.pbf",
+  "sources": {
+    "antananarivo": {
+      "type": "vector",
+      "url": "mbtiles://{antananarivo}"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#f2efe9" }
+    },
+    {
+      "id": "landuse",
+      "type": "fill",
+      "source": "antananarivo",
+      "source-layer": "landuse",
+      "paint": {
+        "fill-color": [
+          "match",
+          ["get", "class"],
+          "residential",
+          "#e0dfdf",
+          "industrial",
+          "#dcd2be",
+          "commercial",
+          "#f0d0d0",
+          "retail",
+          "#f2d6d6",
+          "cemetery",
+          "#cce5c8",
+          "park",
+          "#c8e6c9",
+          "forest",
+          "#b5dca3",
+          "wood",
+          "#b5dca3",
+          "grass",
+          "#dbeac0",
+          "meadow",
+          "#dbeac0",
+          "farmland",
+          "#e5e8c8",
+          "orchard",
+          "#e5e8c8",
+          "vineyard",
+          "#e5e8c8",
+          "scrub",
+          "#cddbb3",
+          "heath",
+          "#d7e2b7",
+          "#efefef"
+        ],
+        "fill-opacity": 0.75
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "antananarivo",
+      "source-layer": "water",
+      "paint": { "fill-color": "#9cc6e8", "fill-opacity": 0.9 }
+    },
+    {
+      "id": "waterway",
+      "type": "line",
+      "source": "antananarivo",
+      "source-layer": "waterway",
+      "paint": { "line-color": "#7fb6df", "line-width": 1 }
+    },
+    {
+      "id": "buildings",
+      "type": "fill",
+      "source": "antananarivo",
+      "source-layer": "buildings",
+      "paint": { "fill-color": "#d9d0c1", "fill-opacity": 0.8 }
+    },
+    {
+      "id": "buildings-outline",
+      "type": "line",
+      "source": "antananarivo",
+      "source-layer": "buildings",
+      "paint": { "line-color": "#c6bbae", "line-width": 0.5 }
+    },
+    {
+      "id": "roads-casing",
+      "type": "line",
+      "source": "antananarivo",
+      "source-layer": "roads",
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#d3c7b8",
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          6,
+          0.9,
+          10,
+          2,
+          12,
+          3.5,
+          14,
+          5.5
+        ]
+      }
+    },
+    {
+      "id": "roads",
+      "type": "line",
+      "source": "antananarivo",
+      "source-layer": "roads",
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": [
+          "match",
+          ["get", "class"],
+          "motorway",
+          "#e892a2",
+          "trunk",
+          "#f9b29c",
+          "primary",
+          "#fcd6a4",
+          "secondary",
+          "#f7f7b4",
+          "tertiary",
+          "#ffffff",
+          "residential",
+          "#ffffff",
+          "unclassified",
+          "#ffffff",
+          "living_street",
+          "#ffffff",
+          "service",
+          "#ffffff",
+          "track",
+          "#d9d9d9",
+          "footway",
+          "#cfcfcf",
+          "path",
+          "#cfcfcf",
+          "cycleway",
+          "#cfcfcf",
+          "#ffffff"
+        ],
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          6,
+          [
+            "match",
+            ["get", "class"],
+            "motorway",
+            1.2,
+            "trunk",
+            1.1,
+            "primary",
+            1.0,
+            "secondary",
+            0.9,
+            "tertiary",
+            0.7,
+            0.5
+          ],
+          12,
+          [
+            "match",
+            ["get", "class"],
+            "motorway",
+            4.5,
+            "trunk",
+            4.0,
+            "primary",
+            3.5,
+            "secondary",
+            3.0,
+            "tertiary",
+            2.2,
+            1.6
+          ],
+          14,
+          [
+            "match",
+            ["get", "class"],
+            "motorway",
+            7.5,
+            "trunk",
+            6.5,
+            "primary",
+            5.5,
+            "secondary",
+            4.5,
+            "tertiary",
+            3.5,
+            2.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "places",
+      "type": "circle",
+      "source": "antananarivo",
+      "source-layer": "places",
+      "paint": { "circle-radius": 2, "circle-color": "#e11d48" }
+    },
+    {
+      "id": "place-labels",
+      "type": "symbol",
+      "source": "antananarivo",
+      "source-layer": "places",
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 8, 10, 12, 12, 14, 14],
+        "text-offset": [0, 0.6],
+        "text-anchor": "top"
+      },
+      "paint": {
+        "text-color": "#374151",
+        "text-halo-color": "#f7f4ef",
+        "text-halo-width": 1
+      }
+    }
+  ]
+}
