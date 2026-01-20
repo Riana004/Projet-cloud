@@ -1,0 +1,36 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Node
+node_modules/
+dist/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Java / Maven
+*.class
+*.log
+.target/
+**/target/
+
+# Docker / Compose
+*.pid
+
+# Cartes data outputs
+cartes/data/antananarivo.mbtiles
+cartes/data/osm/
+cartes/data/fonts/
+cartes/data/files/
+cartes/data/coastline/
+cartes/data/styles/**/sprite*
+
+# Secrets
+.env
