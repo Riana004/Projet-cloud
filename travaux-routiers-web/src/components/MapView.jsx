@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -41,18 +42,49 @@ export default function MapView({ reports }) {
     },
   ];
   const items = reports && reports.length > 0 ? reports : mockReports;
+  const [apiReports, setApiReports] = useState([]);
+  const [apiSummary, setApiSummary] = useState(null);
 
-  const totalPoints = items.length;
-  const totalSurface = items.reduce(
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const [listRes, summaryRes] = await Promise.all([
+          fetch("http://localhost:8081/api/signalements", { signal: controller.signal }),
+          fetch("http://localhost:8081/api/signalements/summary", { signal: controller.signal }),
+        ]);
+        if (listRes.ok) {
+          const list = await listRes.json();
+          setApiReports(Array.isArray(list) ? list : []);
+        }
+        if (summaryRes.ok) {
+          const summary = await summaryRes.json();
+          setApiSummary(summary);
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setApiReports([]);
+          setApiSummary(null);
+        }
+      }
+    };
+    load();
+    return () => controller.abort();
+  }, []);
+
+  const activeItems = apiReports.length > 0 ? apiReports : items;
+
+  const totalPoints = apiSummary?.totalPoints ?? activeItems.length;
+  const totalSurface = apiSummary?.totalSurface ?? activeItems.reduce(
     (sum, item) => sum + (Number(item.surfaceM2) || 0),
     0
   );
-  const totalBudget = items.reduce(
+  const totalBudget = apiSummary?.totalBudget ?? activeItems.reduce(
     (sum, item) => sum + (Number(item.budget) || 0),
     0
   );
-  const completedCount = items.filter((item) => item.status === "terminé").length;
-  const progressPercent = totalPoints === 0 ? 0 : Math.round((completedCount / totalPoints) * 100);
+  const completedCount = activeItems.filter((item) => item.status === "terminé").length;
+  const progressPercent = apiSummary?.progressPercent ?? (totalPoints === 0 ? 0 : Math.round((completedCount / totalPoints) * 100));
   const formatMoney = (value) =>
     new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
   const formatSurface = (value) =>
@@ -97,7 +129,7 @@ export default function MapView({ reports }) {
       >
         <TileLayer url={tileUrl} attribution={attribution} />
 
-        {items.map((r) => (
+        {activeItems.map((r) => (
           <Marker key={r.id} position={[r.lat, r.lng]}>
             <Tooltip direction="top" offset={[0, -10]} opacity={1}>
               <div style={{ fontSize: 12 }}>
