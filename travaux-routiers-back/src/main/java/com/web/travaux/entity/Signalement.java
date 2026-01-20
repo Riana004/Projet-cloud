@@ -42,4 +42,14 @@ public class Signalement {
 
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
+
+    @Column(name = "surface", nullable = false)
+    private double surface;
+
+    @Column(name = "budget", nullable = false)
+    private double budget;
+
+    @Column(name = "entreprise_concerne", nullable = false, length = 255)
+    private String entrepriseConcerne;
+
 }
