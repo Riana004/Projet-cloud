@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 
 @Entity
 @Table(name = "SIGNALEMENT")
@@ -36,6 +38,7 @@ public class Signalement {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_statut")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private StatutSignalement statut;
 
     @Column(name = "is_dirty", nullable = false)
