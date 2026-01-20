@@ -3,6 +3,7 @@ package com.web.travaux.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Entity
