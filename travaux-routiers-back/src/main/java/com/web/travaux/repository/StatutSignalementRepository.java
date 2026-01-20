@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.authentification.authentification.entity.User;
+import com.web.travaux.entity.StatutSignalement;
 
 import java.util.Optional;
 
 @Repository
-public interface StatutSignalementRepository {
+public interface StatutSignalementRepository extends JpaRepository<StatutSignalement, Long> {
     
 }

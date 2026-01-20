@@ -5,11 +5,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.authentification.authentification.entity.User;
+import com.web.travaux.entity.Role;
 
 import java.util.Optional;
 
 @Repository
-public interface RoleRepository {
+public interface RoleRepository extends JpaRepository<Role, Long> {
     
 }
