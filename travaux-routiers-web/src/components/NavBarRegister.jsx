@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function Navbar() {
+export default function NavbarRegister() {
   const { user, logout } = useAuth();
 
   return (
@@ -13,8 +13,8 @@ export default function Navbar() {
       <div className="ms-auto">
         {!user ? (
           <>
-            <Link className="btn btn-outline-light me-2" to="/login">
-              Se connecter
+            <Link className="btn btn-light" to="/register">
+              S’inscrire
             </Link>
           </>
         ) : (
