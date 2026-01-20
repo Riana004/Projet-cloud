@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.List;
 
 @RestController
@@ -65,6 +64,5 @@ public class SignalementController {
             signalementRepository.delete(signalement);
             return ResponseEntity.ok().<Void>build();
         }).orElse(ResponseEntity.notFound().build());
-
     }
 }

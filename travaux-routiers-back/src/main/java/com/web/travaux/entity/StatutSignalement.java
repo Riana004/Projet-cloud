@@ -4,7 +4,6 @@ package com.web.travaux.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.sql.Timestamp;
-
 @Entity
 @Table(name = "STATUT_SIGNALLEMENT")
 @Getter
