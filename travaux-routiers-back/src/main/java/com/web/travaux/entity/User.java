@@ -1,5 +1,6 @@
 package com.web.travaux.entity;
 
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,4 +23,10 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     @ManyToOne(fetch = FetchType.EAGER)
     private Role role;
+
+    @Column(name = "is_dirty", nullable = false)
+    private boolean isDirty;
+
+    @Column(name = "updated_at", nullable = false, updatable = false)
+    private Timestamp updatedAt;
 }
