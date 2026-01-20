@@ -1,0 +1,41 @@
+services:
+  osm-download:
+    image: curlimages/curl:8.6.0
+    container_name: cartes-osm-download
+    restart: "no"
+    user: "${UID}:${GID}"
+    volumes:
+      - ./data:/data
+    command:
+      [
+        "sh","-c",
+        "mkdir -p /data/osm && if [ -f /data/osm/madagascar-latest.osm.pbf ]; then echo 'OSM extract already present'; exit 0; fi; echo 'Downloading OSM...'; tmp=/data/osm/madagascar-latest.osm.pbf.part; rm -f $$tmp; curl -L --retry 5 --retry-delay 5 --retry-connrefused -o $$tmp https://download.geofabrik.de/africa/madagascar-latest.osm.pbf; if [ ! -s $$tmp ]; then echo 'Download failed or empty'; exit 1; fi; mv $$tmp /data/osm/madagascar-latest.osm.pbf"
+      ]
+
+  tilemaker:
+    image: ghcr.io/systemed/tilemaker:master
+    container_name: cartes-tilemaker
+    restart: "no"
+    user: "${UID}:${GID}"
+    volumes:
+      - ./data:/data
+      - ./data/tilemaker:/cfg
+    depends_on:
+      - osm-download
+    entrypoint: ["sh","-c"]
+    command:
+      [
+        "if [ -f /data/antananarivo.mbtiles ]; then echo 'MBTiles already present'; exit 0; fi; while [ ! -f /data/osm/madagascar-latest.osm.pbf ]; do echo 'Waiting for OSM...'; sleep 3; done; size=$$(wc -c < /data/osm/madagascar-latest.osm.pbf); echo \"PBF size: $$size\"; if [ $$size -lt 1000000 ]; then echo 'PBF too small, delete and re-download'; exit 1; fi; /usr/src/app/tilemaker --input /data/osm/madagascar-latest.osm.pbf --output /data/antananarivo.mbtiles --config /cfg/config.json --process /cfg/process.lua"
+      ]
+
+  tileserver:
+    image: maptiler/tileserver-gl:latest
+    container_name: cartes-tileserver
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    depends_on:
+      tilemaker:
+        condition: service_completed_successfully
+    command: ["-c", "/data/config.json"]
