@@ -34,7 +34,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/login")
+   @PostMapping("/login-firebase")
     @Operation(summary = "Connexion sécurisée", description = "Vérifie le blocage local, détecte la connexion internet, et tente l'authentification (Firebase ou Local).")
     public ResponseEntity<String> login(
             @RequestParam String email, 

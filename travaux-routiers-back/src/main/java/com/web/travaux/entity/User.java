@@ -3,7 +3,7 @@ package com.web.travaux.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import java.sql.Timestamp;
 @Entity
 @Table(name = "users")
 @Getter @Setter 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavBar";
-import { loginApi } from "../api/auth.api";
+import { loginFirebaseApi, loginRoleApi } from "../api/auth.api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,10 +12,25 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    try {
-      const response = await loginApi({ email, password });
-      const user = response.data;
 
+    try {
+      // 1️⃣ Authentification Firebase
+      const firebaseResponse = await loginFirebaseApi({ email, password });
+      if (!firebaseResponse.data || firebaseResponse.data !== "success") {
+        setError("Identifiants invalides (Firebase)");
+        return;
+      }
+
+      // 2️⃣ Récupération du rôle depuis backend local
+      const roleResponse = await loginRoleApi({ email, password });
+      const user = roleResponse.data;
+
+      if (!user || !user.role) {
+        setError("Impossible de récupérer le rôle de l'utilisateur");
+        return;
+      }
+
+      // 3️⃣ Navigation selon le rôle
       if (user.role === "1") {
         navigate("/manager");
       } else if (user.role === "2") {
@@ -24,7 +39,7 @@ export default function Login() {
         setError("Rôle inconnu");
       }
     } catch (err) {
-      if (err.response) {
+      if (err.response && err.response.data) {
         setError(err.response.data);
       } else {
         setError("Erreur réseau");
