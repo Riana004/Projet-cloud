@@ -27,8 +27,4 @@ public class StatutSignalement {
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
 
-    public StatutSignalement orElseThrow(Object object) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
-    }
 }
