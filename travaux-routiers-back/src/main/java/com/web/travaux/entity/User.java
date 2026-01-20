@@ -1,7 +1,10 @@
-package com.authentification.authentification.entity;
+package com.web.travaux.entity;
+
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.sql.Timestamp;
 
 @Entity
 @Table(name = "users")
@@ -19,9 +22,13 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    private int failedAttempts = 0;
+    @JoinColumn(name = "role_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Role role;
 
-    private boolean isBlocked = false;
+    @Column(name = "is_dirty", nullable = false)
+    private boolean isDirty;
 
-    
+    @Column(name = "updated_at", nullable = false, updatable = false)
+    private Timestamp updatedAt;
 }
