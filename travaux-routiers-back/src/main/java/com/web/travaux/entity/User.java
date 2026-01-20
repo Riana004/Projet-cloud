@@ -1,4 +1,4 @@
-package com.authentification.authentification.entity;
+package com.web.travaux.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,9 +19,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    private int failedAttempts = 0;
-
-    private boolean isBlocked = false;
-
-    
+    @JoinColumn(name = "role_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Role role;
 }
