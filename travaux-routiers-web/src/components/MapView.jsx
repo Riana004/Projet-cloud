@@ -6,6 +6,7 @@ export default function MapView({ reports }) {
   const tileUrl = "http://localhost:8080/styles/basic/{z}/{x}/{y}.png";
   // const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
   const attribution = "© OpenStreetMap contributors (offline tiles)";
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
   const mockReports = [
     {
       id: "sig-1",
@@ -44,33 +45,41 @@ export default function MapView({ reports }) {
   const items = reports && reports.length > 0 ? reports : mockReports;
   const [apiReports, setApiReports] = useState([]);
   const [apiSummary, setApiSummary] = useState(null);
+  const [apiError, setApiError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
     const load = async () => {
       try {
         const [listRes, summaryRes] = await Promise.all([
-          fetch("http://localhost:8081/api/signalements", { signal: controller.signal }),
-          fetch("http://localhost:8081/api/signalements/summary", { signal: controller.signal }),
+          fetch(`${apiBaseUrl}/api/signalements`, { signal: controller.signal, mode: "cors" }),
+          fetch(`${apiBaseUrl}/api/signalements/summary`, { signal: controller.signal, mode: "cors" }),
         ]);
         if (listRes.ok) {
           const list = await listRes.json();
           setApiReports(Array.isArray(list) ? list : []);
+          setApiError("");
+        } else {
+          setApiError(`API signalements: ${listRes.status}`);
         }
         if (summaryRes.ok) {
           const summary = await summaryRes.json();
           setApiSummary(summary);
+          setApiError("");
+        } else {
+          setApiError(`API summary: ${summaryRes.status}`);
         }
       } catch (error) {
         if (error.name !== "AbortError") {
           setApiReports([]);
           setApiSummary(null);
+          setApiError(error?.message || "Erreur API");
         }
       }
     };
     load();
     return () => controller.abort();
-  }, []);
+  }, [apiBaseUrl]);
 
   const activeItems = apiReports.length > 0 ? apiReports : items;
 
