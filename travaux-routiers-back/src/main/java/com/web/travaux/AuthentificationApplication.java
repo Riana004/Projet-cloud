@@ -1,4 +1,4 @@
-package com.authentification.authentification;
+package com.web.travaux;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
