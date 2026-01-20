@@ -3,6 +3,11 @@ import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView({ reports }) {
+  const tileUrl = "http://localhost:8080/styles/basic/{z}/{x}/{y}.png";
+  // const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const attribution = "© OpenStreetMap contributors (offline tiles)";
+  const items = reports ?? [];
+
   return (
     <MapContainer
       center={[-18.8792, 47.5079]}
