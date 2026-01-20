@@ -16,4 +16,10 @@ public class Role {
     private Long id;
 
     private String description;
+
+    @Column(name = "is_dirty", nullable = false)
+    private boolean isDirty;
+
+    @Column(name = "updated_at", nullable = false, updatable = false)
+    private Timestamp updatedAt;
 }
