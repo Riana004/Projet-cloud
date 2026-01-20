@@ -16,7 +16,7 @@ public class AuthController {
 
     private final UserRepository userRepository;
 
-    @PostMapping("/login")
+    @PostMapping("/login-role")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         return userRepository.findByEmail(request.getEmail())
                 .map(user -> {

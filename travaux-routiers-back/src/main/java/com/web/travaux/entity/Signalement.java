@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 @Entity
 @Table(name = "SIGNALEMENT")
