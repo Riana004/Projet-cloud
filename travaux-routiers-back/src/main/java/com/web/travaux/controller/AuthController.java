@@ -10,8 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000")
-
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class AuthController {
 
     @Autowired
@@ -26,7 +25,7 @@ public class AuthController {
                         LoginResponse response = new LoginResponse(
                                 user.getId(),
                                 user.getEmail(),
-                                user.getRole().getName()   // suppose que Role a un champ "name"
+                                user.getRole().getDescription()   // suppose que Role a un champ "name"
                         );
                         return ResponseEntity.ok(response);
                     } else {
