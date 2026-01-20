@@ -36,4 +36,20 @@ public class Signalement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_statut")
     private StatutSignalement statut;
+
+    @Column(name = "is_dirty", nullable = false)
+    private boolean isDirty;
+
+    @Column(name = "updated_at", nullable = false, updatable = false)
+    private Timestamp updatedAt;
+
+    @Column(name = "surface", nullable = false)
+    private double surface;
+
+    @Column(name = "budget", nullable = false)
+    private double budget;
+
+    @Column(name = "entreprise_concerne", nullable = false, length = 255)
+    private String entrepriseConcerne;
+
 }
