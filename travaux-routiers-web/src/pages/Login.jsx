@@ -1,27 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/NavBar";
+import { loginApi } from "../api/auth.api";
 
 export default function Login() {
-  const { login } = useAuth();
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
-    //   await login(email, password);
-      if(email === "manager@gmail.com"){
+      const response = await loginApi({ email, password });
+      const user = response.data;
+
+      if (user.role === "1") {
         navigate("/manager");
-      }else{
-          navigate("/utilisateur");
+      } else if (user.role === "2") {
+        navigate("/utilisateur");
+      } else {
+        setError("Rôle inconnu");
       }
-    } catch {
-      setError("Identifiants incorrects");
+    } catch (err) {
+      if (err.response) {
+        setError(err.response.data);
+      } else {
+        setError("Erreur réseau");
+      }
     }
   };
 
