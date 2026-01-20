@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_db
     ports:
-      - "5432:5432"
+      - "5433:5433"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d auth_db"]
       interval: 5s
@@ -24,7 +24,7 @@ services:
       - "8080:8080"
     restart: on-failure
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/auth_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5433/auth_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
       # Ajoute ta clé Firebase ici si elle n'est pas dans ton application.properties
