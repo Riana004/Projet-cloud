@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   db:
-    image: postgres:latest    # utilise ton image locale
+    image: postgres:latest
     container_name: postgres_db
     environment:
       POSTGRES_USER: user
@@ -11,21 +9,23 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d postgres_db"]
+      test: ["CMD-SHELL", "pg_isready -U user -d signalement_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   app:
-    image: travaux-web:latest  # utilise ton image locale
+    build: .
     container_name: spring_app_travaux
     ports:
-      - "8085:8080"
-    restart: on-failure
+      - "8085:8085"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/signalement_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SERVER_PORT: 8085
     depends_on:
       db:
         condition: service_healthy
