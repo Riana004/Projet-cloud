@@ -27,7 +27,6 @@ public class AuthController {
                                 user.getId(),
                                 user.getEmail(),
                                 String.valueOf(user.getRole().getId()) // on renvoie l'id du rôle
-
                         );
                         return ResponseEntity.ok(response);
                     } else {
