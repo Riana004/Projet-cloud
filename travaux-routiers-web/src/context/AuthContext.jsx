@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import { loginApi, registerApi } from "../api/auth.api";
+import { loginFirebaseApi, registerApi } from "../api/auth.api";
 
 const AuthContext = createContext();
 
@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
 
   const login = async (email, password) => {
-    const res = await loginApi({ email, password });
+    const res = await loginFirebaseApi({ email, password });
     setUser(res.data.user);
     setToken(res.data.token);
   };

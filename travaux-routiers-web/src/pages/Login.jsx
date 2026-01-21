@@ -33,7 +33,7 @@ export default function Login() {
       // 3️⃣ Navigation selon le rôle
       if (user.role === "1") {
         navigate("/manager");
-      } else if (user.role === "2") {
+      } else if (user.role === "2" || user.role === "3") {
         navigate("/utilisateur");
       } else {
         setError("Rôle inconnu");
