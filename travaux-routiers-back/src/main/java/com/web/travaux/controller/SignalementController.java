@@ -1,105 +1,70 @@
 package com.web.travaux.controller;
 
-import com.web.travaux.dto.SignalementResponse;
-import com.web.travaux.dto.SignalementSummaryResponse;
 import com.web.travaux.entity.Signalement;
 import com.web.travaux.repository.SignalementRepository;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/signalements")
-@CrossOrigin(origins = "*")
 public class SignalementController {
 
-    private final SignalementRepository signalementRepository;
+    @Autowired
+    private SignalementRepository signalementRepository;
 
-    public SignalementController(SignalementRepository signalementRepository) {
-        this.signalementRepository = signalementRepository;
-    }
-
+    // 1. Lister tous les signalements
     @GetMapping
-    public List<SignalementResponse> getAll() {
-        return resolveSignalements();
+    public List<Signalement> getAllSignalements() {
+        return signalementRepository.findAll();
     }
 
-    @GetMapping("/summary")
-    public SignalementSummaryResponse getSummary() {
-        List<SignalementResponse> items = resolveSignalements();
-        int totalPoints = items.size();
-        double totalSurface = items.stream().mapToDouble(SignalementResponse::getSurfaceM2).sum();
-        double totalBudget = items.stream().mapToDouble(SignalementResponse::getBudget).sum();
-        int completed = 0;
-        for (SignalementResponse item : items) {
-            String status = item.getStatus();
-            if (status != null && status.toLowerCase().startsWith("termin")) {
-                completed++;
-            }
-        }
-        int progressPercent = totalPoints == 0 ? 0 : Math.round((completed * 100f) / totalPoints);
-        return new SignalementSummaryResponse(totalPoints, totalSurface, totalBudget, progressPercent);
+    // 2. Récupérer un signalement par ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Signalement> getSignalementById(@PathVariable Long id) {
+        return signalementRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    private List<SignalementResponse> resolveSignalements() {
-        List<Signalement> entities = signalementRepository.findAll();
-        if (!entities.isEmpty()) {
-            List<SignalementResponse> mapped = new ArrayList<>();
-            for (Signalement entity : entities) {
-                mapped.add(new SignalementResponse(
-                        entity.getId(),
-                        entity.getDescription(),
-                        entity.getDateSignalement(),
-                        entity.getStatut() != null ? entity.getStatut().getStatut() : "nouveau",
-                        entity.getSurface(),
-                        entity.getBudget(),
-                        entity.getEntrepriseConcerne(),
-                        entity.getLatitude(),
-                        entity.getLongitude()
-                ));
-            }
-            return mapped;
-        }
+    // 3. Ajouter un nouveau signalement
+    @PostMapping
+    public Signalement createSignalement(@RequestBody Signalement signalement) {
+        // updatedAt et isDirty peuvent être initialisés ici
+        signalement.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+        signalement.setDirty(false);
+        return signalementRepository.save(signalement);
+    }
 
-        List<SignalementResponse> mock = new ArrayList<>();
-        mock.add(new SignalementResponse(
-                1L,
-                "Nid de poule - Avenue de l'Indépendance",
-                LocalDateTime.of(2026, 1, 12, 9, 30),
-                "nouveau",
-                12.5,
-                1_200_000,
-                "Rivo TP",
-                -18.9097,
-                47.5255
-        ));
-        mock.add(new SignalementResponse(
-                2L,
-                "Chaussée dégradée - Ankorondrano",
-                LocalDateTime.of(2026, 1, 8, 14, 0),
-                "en cours",
-                45.0,
-                4_500_000,
-                "Saha Routes",
-                -18.8735,
-                47.5119
-        ));
-        mock.add(new SignalementResponse(
-                3L,
-                "Tranchée ouverte - Tsaralalana",
-                LocalDateTime.of(2025, 12, 28, 16, 45),
-                "terminé",
-                8.2,
-                900_000,
-                "Tanà Infra",
-                -18.8792,
-                47.5042
-        ));
-        return mock;
+    // 4. Mettre à jour un signalement
+    @PutMapping("/{id}")
+    public ResponseEntity<Signalement> updateSignalement(
+            @PathVariable Long id,
+            @RequestBody Signalement updatedSignalement
+    ) {
+        return signalementRepository.findById(id).map(signalement -> {
+            signalement.setDescription(updatedSignalement.getDescription());
+            signalement.setLatitude(updatedSignalement.getLatitude());
+            signalement.setLongitude(updatedSignalement.getLongitude());
+            signalement.setSurface(updatedSignalement.getSurface());
+            signalement.setBudget(updatedSignalement.getBudget());
+            signalement.setEntrepriseConcerne(updatedSignalement.getEntrepriseConcerne());
+            signalement.setStatut(updatedSignalement.getStatut());
+            signalement.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+            return ResponseEntity.ok(signalementRepository.save(signalement));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // 5. Supprimer un signalement
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSignalement(@PathVariable Long id) {
+        return signalementRepository.findById(id).map(signalement -> {
+            signalementRepository.delete(signalement);
+            return ResponseEntity.ok().<Void>build();
+        }).orElse(ResponseEntity.notFound().build());
+
     }
 }

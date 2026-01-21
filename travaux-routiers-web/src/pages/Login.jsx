@@ -1,29 +1,47 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/NavBar";
+import { loginFirebaseApi, loginRoleApi } from "../api/auth.api";
 
 export default function Login() {
-  const { login } = useAuth();
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-    //   await login(email, password);
-      if(email === "manager@gmail.com"){
-        navigate("/manager");
-      }else{
-          navigate("/utilisateur");
-      }
-    } catch {
-      setError("Identifiants incorrects");
+  try {
+    // // 1️⃣ Auth Firebase
+    // const firebaseResponse = await loginFirebaseApi({ email, password });
+    // console.log("Firebase response:", firebaseResponse.data); // DEBUG
+    // if (!firebaseResponse.data) {
+    //   setError("Identifiants invalides (Firebase)");
+    //   return;
+    // }
+
+    // 2️⃣ Auth rôle
+    const roleResponse = await loginRoleApi({ email, password });
+    console.log("Role response:", roleResponse.data); // DEBUG
+    const user = roleResponse.data;
+
+    if (!user || !user.role) {
+      setError("Impossible de récupérer le rôle de l'utilisateur");
+      return;
     }
-  };
+
+    // 3️⃣ Navigation
+    if (user.role === "1") navigate("/manager");
+    // else if (user.role === "2" || user.role === "3") navigate("/utilisateur");
+    // else setError("Rôle inconnu");
+
+  } catch (err) {
+    console.error(err);
+    if (err.response && err.response.data) setError(err.response.data);
+    else setError("Erreur réseau");
+  }
+};
 
   return (
     <>

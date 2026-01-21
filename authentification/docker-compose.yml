@@ -1,23 +1,22 @@
-version: "3.9"
-
 services:
   db:
-    image: postgres:latest    # utilise ton image locale
-    container_name: postgres_db
+    image: postgres:latest
+    container_name: postgres_db2
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_db
     ports:
-      - "5432:5432"
+      - "5433:5432"  # mappe le port interne 5432 vers 5433 sur l'hôte
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d auth_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+
   app:
-    image: authentification-app:latest  # utilise ton image locale
+    build: .
     container_name: spring_app
     ports:
       - "8080:8080"
