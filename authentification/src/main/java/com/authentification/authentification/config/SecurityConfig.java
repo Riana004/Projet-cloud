@@ -11,6 +11,7 @@ import org.springframework.web.cors.*;
 
 import java.util.List;
 
+import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -18,6 +19,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // ✅ LIGNE CRITIQUE
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults()) // 🔥 OBLIGATOIRE
             .authorizeHttpRequests(auth -> auth
