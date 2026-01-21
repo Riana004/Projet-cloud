@@ -18,6 +18,6 @@ public class ReportDTO {
     private Double surfaceM2;
     private Double budget;
     private String entreprise;
-
+    private String description;
     // getters & setters
 }
