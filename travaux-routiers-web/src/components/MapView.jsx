@@ -20,7 +20,7 @@ export default function MapView({ reports }) {
           position={[r.latitude, r.longitude]}
         >
           <Popup>
-            <strong>{r.description}</strong>
+            <strong>Problème routier</strong>
             <br />
             📅 Date : {new Date(r.date).toLocaleDateString()}
             <br />

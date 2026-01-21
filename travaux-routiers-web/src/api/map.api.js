@@ -6,7 +6,6 @@ import axios from "axios";
 */
 const MAP_API_URL = "http://localhost:8085/api/reports";
 
-
 export const fetchReports = () => {
   return axios.get(MAP_API_URL);
 };
