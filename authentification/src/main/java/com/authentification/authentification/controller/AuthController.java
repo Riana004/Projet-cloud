@@ -23,7 +23,6 @@ public class AuthController {
     private final AuthService authService;
     private final UserService userService;
 
-    // ✅ REGISTER avec JSON
     @PostMapping("/register")
     @Operation(summary = "Inscription initiale", description = "Crée l'utilisateur simultanément sur Firebase et PostgreSQL local.")
     public ResponseEntity<String> register(
@@ -48,6 +47,7 @@ public class AuthController {
             return ResponseEntity.status(401).body(e.getMessage());
         }
     }
+
 
     // ✅ Débloquer un compte
     @PatchMapping("/unlock/{userId}")
