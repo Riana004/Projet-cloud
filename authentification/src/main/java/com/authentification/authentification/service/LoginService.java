@@ -53,26 +53,25 @@ public class LoginService {
     /**
      * Met à jour ou crée l'utilisateur localement avec le mot de passe validé par Firebase.
      */
-    private void reconcileLocalPassword(String email, String password) {
-        userRepository.findByEmail(email).ifPresentOrElse(
-            user -> {
-                // Si l'utilisateur existe déjà, on met à jour son mot de passe haché
-                // Cela règle le problème si le MDP a été changé sur un autre appareil
-                user.setPassword(passwordEncoder.encode(password));
-                userRepository.save(user);
-                System.out.println("Réconciliation : MDP local mis à jour pour " + email);
-            },
-            () -> {
-                // Si l'utilisateur n'existait pas du tout en local (nouvel utilisateur Firebase)
-                User newUser = User.builder()
-                        .email(email)
-                        .password(passwordEncoder.encode(password))
-                        .failedAttempts(0)
-                        .isBlocked(false)
-                        .build();
-                userRepository.save(newUser);
-                System.out.println("Réconciliation : Nouvel utilisateur créé localement pour " + email);
-            }
-        );
-    }
+ private void reconcileLocalPassword(String email, String password) {
+    userRepository.findByEmail(email).ifPresentOrElse(
+        user -> {
+            // Si l'utilisateur existe déjà, on met à jour son mot de passe haché
+            user.setPassword(passwordEncoder.encode(password));
+            userRepository.save(user);
+            System.out.println("Réconciliation : MDP local mis à jour pour " + email);
+        },
+        () -> {
+            // Nouvel utilisateur local
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setPassword(passwordEncoder.encode(password)); // ⚠️ obligatoire
+            newUser.setFailedAttempts(0);
+            newUser.setBlocked(false);
+            userRepository.save(newUser);
+            System.out.println("Réconciliation : Nouvel utilisateur créé localement pour " + email);
+        }
+    );
+}
+
 }

@@ -9,12 +9,11 @@
         <version>3.4.1</version>
         <relativePath/> </parent>
 
-    <groupId>com.authentification</groupId>
-    <artifactId>authentification</artifactId>
+    <groupId>com.web</groupId>
+    <artifactId>travaux</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>authentification</name>
-    <description>Projet d'authentification hybride Firebase/PostgreSQL</description>
-
+    <name>travaux</name>
+    <description>Projet de gestion des travaux routiers</description>
     <properties>
         <java.version>17</java.version>
         <springdoc.version>2.7.0</springdoc.version>
@@ -48,11 +47,6 @@
             <version>${springdoc.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        
         <dependency>
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
