@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView({ reports }) {
@@ -34,5 +35,7 @@ export default function MapView({ reports }) {
         </Marker>
       ))}
     </MapContainer>
+  // const tileUrl = "http://localhost:8080/styles/basic/{z}/{x}/{y}.png";
+
   );
 }
