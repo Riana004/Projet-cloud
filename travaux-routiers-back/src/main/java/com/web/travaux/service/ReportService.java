@@ -33,6 +33,7 @@ public class ReportService {
         dto.setSurfaceM2(s.getSurface());
         dto.setBudget(s.getBudget());
         dto.setEntreprise(s.getEntrepriseConcerne());
+        dto.setDescription(s.getDescription());
         return dto;
     }
 }
