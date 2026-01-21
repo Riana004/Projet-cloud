@@ -10,14 +10,26 @@ export default function MapView({ reports }) {
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors"
       />
 
       {reports.map((r) => (
-        <Marker key={r.id} position={[r.lat, r.lng]}>
+        <Marker
+          key={r.id}
+          position={[r.latitude, r.longitude]}
+        >
           <Popup>
-            <strong>{r.description}</strong>
+            <strong>Problème routier</strong>
             <br />
-            Statut : {r.status}
+            📅 Date : {new Date(r.date).toLocaleDateString()}
+            <br />
+            🏷 Statut : {r.statut}
+            <br />
+            📐 Surface : {r.surfaceM2} m²
+            <br />
+            💰 Budget : {r.budget.toLocaleString()} Ar
+            <br />
+            🏗 Entreprise : {r.entreprise}
           </Popup>
         </Marker>
       ))}
