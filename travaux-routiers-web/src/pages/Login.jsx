@@ -8,44 +8,40 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  try {
+    // // 1️⃣ Auth Firebase
+    // const firebaseResponse = await loginFirebaseApi({ email, password });
+    // console.log("Firebase response:", firebaseResponse.data); // DEBUG
+    // if (!firebaseResponse.data) {
+    //   setError("Identifiants invalides (Firebase)");
+    //   return;
+    // }
 
-    try {
-      // 1️⃣ Authentification Firebase
-      const firebaseResponse = await loginFirebaseApi({ email, password });
-      if (!firebaseResponse.data || firebaseResponse.data !== "success") {
-        setError("Identifiants invalides (Firebase)");
-        return;
-      }
+    // 2️⃣ Auth rôle
+    const roleResponse = await loginRoleApi({ email, password });
+    console.log("Role response:", roleResponse.data); // DEBUG
+    const user = roleResponse.data;
 
-      // 2️⃣ Récupération du rôle depuis backend local
-      const roleResponse = await loginRoleApi({ email, password });
-      const user = roleResponse.data;
-
-      if (!user || !user.role) {
-        setError("Impossible de récupérer le rôle de l'utilisateur");
-        return;
-      }
-
-      // 3️⃣ Navigation selon le rôle
-      if (user.role === "1") {
-        navigate("/manager");
-      } else if (user.role === "2" || user.role === "3") {
-        navigate("/utilisateur");
-      } else {
-        setError("Rôle inconnu");
-      }
-    } catch (err) {
-      if (err.response && err.response.data) {
-        setError(err.response.data);
-      } else {
-        setError("Erreur réseau");
-      }
+    if (!user || !user.role) {
+      setError("Impossible de récupérer le rôle de l'utilisateur");
+      return;
     }
-  };
+
+    // 3️⃣ Navigation
+    if (user.role === "1") navigate("/manager");
+    else if (user.role === "2" || user.role === "3") navigate("/utilisateur");
+    else setError("Rôle inconnu");
+
+  } catch (err) {
+    console.error(err);
+    if (err.response && err.response.data) setError(err.response.data);
+    else setError("Erreur réseau");
+  }
+};
 
   return (
     <>

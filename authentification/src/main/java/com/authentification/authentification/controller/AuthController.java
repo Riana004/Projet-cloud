@@ -20,15 +20,13 @@ public class AuthController {
     private final AuthService authService;
     private final UserService userService;
 
-    // ✅ REGISTER avec JSON
     @PostMapping("/register")
-    @Operation(summary = "Inscription initiale", description = "Crée l'utilisateur simultanément sur Firebase et PostgreSQL local.")
+    @Operation(summary = "Inscription initiale")
     public ResponseEntity<String> register(@RequestBody LoginRequest request) {
         try {
             if (request.getPassword() == null || request.getPassword().isBlank()) {
                 return ResponseEntity.badRequest().body("Le mot de passe ne peut pas être vide.");
             }
-
             registrationService.register(request.getEmail(), request.getPassword());
             return ResponseEntity.ok("Utilisateur créé avec succès sur Firebase et en local.");
         } catch (Exception e) {
@@ -36,10 +34,10 @@ public class AuthController {
         }
     }
 
-    // ✅ LOGIN avec JSON
-    @PostMapping("/login-firebase")
-    @Operation(summary = "Connexion sécurisée")
+    // ✅ LOGIN
+   @PostMapping("/login-firebase")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
+        System.out.println("Login request: email=" + loginRequest.getEmail() + ", password=" + loginRequest.getPassword());
         try {
             String result = loginService.login(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(result);
@@ -47,6 +45,7 @@ public class AuthController {
             return ResponseEntity.status(401).body(e.getMessage());
         }
     }
+
 
     // ✅ Débloquer un compte
     @PatchMapping("/unlock/{userId}")
