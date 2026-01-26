@@ -1,5 +1,6 @@
 package com.authentification.authentification.controller;
 
+import com.authentification.authentification.dto.UserDTO;
 import com.authentification.authentification.service.AuthService;
 import com.authentification.authentification.service.LoginService;
 import com.authentification.authentification.service.RegistrationService;
@@ -7,6 +8,9 @@ import com.authentification.authentification.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,17 +28,16 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Inscription initiale", description = "Crée l'utilisateur simultanément sur Firebase et PostgreSQL local.")
     public ResponseEntity<String> register(
-            @RequestParam String email, 
-            @RequestParam String password) {
+            @RequestBody UserDTO userDTO) {
         try {
-            registrationService.register(email, password);
+            registrationService.register(userDTO.getEmail(), userDTO.getPassword());
             return ResponseEntity.ok("Utilisateur créé avec succès sur Firebase et en local.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Erreur lors de l'inscription : " + e.getMessage());
         }
     }
 
-    @PostMapping("/login")
+    @PostMapping("login-firebase")
     @Operation(summary = "Connexion sécurisée", description = "Vérifie le blocage local, détecte la connexion internet, et tente l'authentification (Firebase ou Local).")
     public ResponseEntity<String> login(
             @RequestParam String email, 
@@ -71,4 +74,17 @@ public class AuthController {
         // La logique de session peut être ajoutée ici via ton SessionService
         return ResponseEntity.ok("Déconnexion réussie.");
     }
+
+    @GetMapping("/blocked")
+    @Operation(summary = "Liste des utilisateurs bloqués")
+    public ResponseEntity<List<UserDTO>> getBlockedUsers() {
+        // Transforme User en DTO (sans password)
+        List<UserDTO> blockedUsers = userService.getBlockedUsers()
+                .stream()
+                .map(user -> new UserDTO(user.getId(), user.getEmail(), user.getPassword(), user.isBlocked()))
+                .toList();
+
+        return ResponseEntity.ok(blockedUsers);
+    }
+
 }

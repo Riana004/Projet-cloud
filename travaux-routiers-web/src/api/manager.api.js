@@ -17,3 +17,5 @@ export const fetchBlockedUsers = () =>
 
 export const unlockUser = (id) =>
   axios.patch(`${AUTH_API}/unlock/${id}`);
+
+
