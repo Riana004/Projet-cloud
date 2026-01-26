@@ -23,7 +23,7 @@ export default function Register() {
     <>
       <Navbar />
       <div className="container mt-5">
-        <h3>Inscription</h3>
+        <h3>Inscription d'utilisateur</h3>
 
         <form onSubmit={handleSubmit}>
           <input
