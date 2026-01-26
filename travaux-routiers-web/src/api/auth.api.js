@@ -15,3 +15,5 @@ export const loginRoleApi = (data) => {
 export const registerApi = (data) => {
   return axios.post(`${AUTH_API_URL_FIREBASE}/register`, data);
 };
+
+
