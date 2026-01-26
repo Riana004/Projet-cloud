@@ -48,6 +48,10 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/blocked")
+    public List<UserDTO> getBlockedUsers() {
+        return userService.getBlockedUsers();
+    }
 
     // ✅ Débloquer un compte
     @PatchMapping("/unlock/{userId}")
