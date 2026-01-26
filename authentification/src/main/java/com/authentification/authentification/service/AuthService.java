@@ -28,7 +28,7 @@ public class AuthService {
      * Incrémente les tentatives et bloque l'utilisateur si nécessaire.
      * Crée l'utilisateur "à la volée" s'il n'existe pas encore localement.
      */
-    @Transactional
+      @Transactional
     public void handleFailedLogin(String email) {
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
@@ -50,6 +50,26 @@ public class AuthService {
         
         userRepository.save(user);
     }
+//     @Transactional
+// public void handleFailedLogin(String email) {
+//     userRepository.findByEmail(email).ifPresent(user -> {
+
+//         int maxAttempts = configRepository.findById("max_login_attempts")
+//                 .map(AppConfig::getConfigValue)
+//                 .orElse(3);
+
+//         user.setFailedAttempts(user.getFailedAttempts() + 1);
+
+//         if (user.getFailedAttempts() >= maxAttempts) {
+//             user.setBlocked(true);
+//         }
+
+//         userRepository.save(user);
+//     });
+
+//     // ❌ si l'utilisateur n'existe pas → ON NE FAIT RIEN
+// }
+
 
     /**
      * REMPLACE LA MÉTHODE MANQUANTE :
