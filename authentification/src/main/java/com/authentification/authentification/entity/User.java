@@ -22,4 +22,6 @@ public class User {
     private int failedAttempts = 0;
 
     private boolean isBlocked = false;
+
+    
 }
