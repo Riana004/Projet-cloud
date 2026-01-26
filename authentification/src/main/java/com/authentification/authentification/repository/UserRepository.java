@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.authentification.authentification.entity.User;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -20,4 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("UPDATE User u SET u.failedAttempts = 0, u.isBlocked = false WHERE u.id = :userId")
     void unlockUser(Long userId);
+
+    List<User> findByIsBlockedTrue();
+
+    
 }

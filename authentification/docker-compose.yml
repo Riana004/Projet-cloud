@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15
+    image: postgres:18-alpine # Version plus légère et précise
     container_name: postgres_db
     environment:
       POSTGRES_USER: user
@@ -15,15 +15,20 @@ services:
       retries: 5
 
   app:
-    build: .
+    # REMPLACE image: par build:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: spring_app
     ports:
       - "8080:8080"
-    restart: on-failure  # Redémarre si l'app crash au lancement
+    restart: on-failure
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/auth_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      # Ajoute ta clé Firebase ici si elle n'est pas dans ton application.properties
+      # FIREBASE_API_KEY: ta_cle_ici 
     depends_on:
       db:
-        condition: service_healthy  # Attend que le healthcheck de la DB soit OK
+        condition: service_healthy

@@ -5,6 +5,9 @@ import com.authentification.authentification.entity.AppConfig;
 import com.authentification.authentification.repository.UserRepository;
 import com.authentification.authentification.repository.AppConfigRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +38,7 @@ public class AuthService {
             newUser.setEmail(email);
             newUser.setFailedAttempts(0);
             newUser.setBlocked(false);
+            newUser.setPassword("NOT_SYNCED_YET_" + UUID.randomUUID().toString());
             return userRepository.save(newUser);
         });
 
