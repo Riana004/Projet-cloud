@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = "*") // React
 @RequiredArgsConstructor
 public class ReportController {
 

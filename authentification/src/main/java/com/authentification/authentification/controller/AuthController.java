@@ -1,12 +1,16 @@
 package com.authentification.authentification.controller;
 
 import com.authentification.authentification.dto.LoginRequest;
+import com.authentification.authentification.dto.UserDTO;
 import com.authentification.authentification.service.AuthService;
 import com.authentification.authentification.service.LoginService;
 import com.authentification.authentification.service.RegistrationService;
 import com.authentification.authentification.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +50,10 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/blocked")
+    public List<UserDTO> getBlockedUsers() {
+        return userService.getBlockedUsers();
+    }
 
     // ✅ Débloquer un compte
     @PatchMapping("/unlock/{userId}")

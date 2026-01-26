@@ -14,4 +14,5 @@ import java.util.Optional;
 @Repository
 public interface StatutSignalementRepository extends JpaRepository<StatutSignalement, Long> {
     
+    StatutSignalement findByStatut(String statut);
 }

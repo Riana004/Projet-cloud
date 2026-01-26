@@ -1,10 +1,14 @@
 package com.authentification.authentification.service;
 
+import com.authentification.authentification.dto.UserDTO;
 import com.authentification.authentification.entity.User;
 import com.authentification.authentification.repository.UserRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -45,5 +49,12 @@ public class UserService {
             // En cas d'erreur de communication avec Firebase (ex: compte supprimé sur le cloud)
             throw new RuntimeException("Échec de la synchronisation avec Firebase : " + e.getMessage());
         }
+    }
+
+    public List<UserDTO> getBlockedUsers() {
+        List<User> blockedUsers = userRepository.findByIsBlockedTrue();
+        return blockedUsers.stream()
+                .map(user -> new UserDTO(user.getId(), user.getEmail(), user.getFailedAttempts(), user.isBlocked()))
+                .toList();
     }
 }
