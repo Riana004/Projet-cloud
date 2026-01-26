@@ -13,6 +13,9 @@ VALUES
 ('user1@example.com', 'userpass1', 3, false, NOW()),
 ('user2@example.com', 'userpass2', 3, false, NOW());
 
+INSERT INTO users (email, password, role_id, is_dirty, updated_at)
+VALUES
+('elia@gmail.com', 'eliatest', 1, false, NOW());
 -- StatutSignalement
 INSERT INTO statut_signallement (statut, is_dirty, updated_at)
 VALUES
