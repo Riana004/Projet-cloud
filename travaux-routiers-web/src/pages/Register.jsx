@@ -38,8 +38,8 @@ export default function Register() {
         password: form.password,
       });
 
-      /* 3️⃣ Login automatique */
-      await login(form.email, form.password);
+      // /* 3️⃣ Login automatique */
+      // await login(form.email, form.password);
 
       navigate("/");
     } catch (err) {

@@ -1,10 +1,17 @@
 package com.authentification.authentification.service;
 
+import com.authentification.authentification.dto.UserDTO;
 import com.authentification.authentification.entity.User;
 import com.authentification.authentification.repository.UserRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -46,4 +53,18 @@ public class UserService {
             throw new RuntimeException("Échec de la synchronisation avec Firebase : " + e.getMessage());
         }
     }
+
+    //  public List<User> getBlockedUsers() {
+    //     return userRepository.findByIsBlockedTrue();
+    // }
+
+    public List<UserDTO> getBlockedUsers() {
+    return userRepository.findAll()
+        .stream()
+        .map(u -> new UserDTO(u.getId(), u.getEmail(), u.getPassword(), u.isBlocked()))
+        .collect(Collectors.toList());
+}
+
+
+
 }

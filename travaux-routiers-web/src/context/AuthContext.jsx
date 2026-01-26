@@ -8,8 +8,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* 🔁 Restore session */
-  useEffect(() => {
+useEffect(() => {
+  try {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
 
@@ -17,24 +17,31 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
     }
-    setLoading(false);
-  }, []);
+  } catch (e) {
+    console.warn("Session corrompue, nettoyage...");
+    localStorage.clear();
+  }
+  setLoading(false);
+}, []);
+
 
   const login = async (email, password) => {
-    try {
-      const res = await loginFirebaseApi({ email, password });
+  try {
+    const res = await loginFirebaseApi({ email, password });
 
-      setUser(res.data.user);
-      setToken(res.data.token);
+    // Firebase login retourne juste un message
+    setUser({ email });
+    setToken("firebase-session");
 
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify({ email }));
+    localStorage.setItem("token", "firebase-session");
 
-      return res.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  };
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
 
 
   const logout = () => {
