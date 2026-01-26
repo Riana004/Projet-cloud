@@ -42,6 +42,7 @@ public class LoginService {
 
         // 3. Gestion des compteurs et retour
         if (isAuthenticated) {
+            System.out.println("Authentification réussie pour " + email);
             securityService.resetAttempts(email);
             return "Connexion réussie (" + (online ? "Online" : "Offline") + ")";
         } else {
