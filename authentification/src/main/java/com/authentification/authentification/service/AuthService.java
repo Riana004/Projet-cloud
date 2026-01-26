@@ -5,6 +5,9 @@ import com.authentification.authentification.entity.AppConfig;
 import com.authentification.authentification.repository.UserRepository;
 import com.authentification.authentification.repository.AppConfigRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +31,14 @@ public class AuthService {
      * Incrémente les tentatives et bloque l'utilisateur si nécessaire.
      * Crée l'utilisateur "à la volée" s'il n'existe pas encore localement.
      */
-      @Transactional
+    @Transactional
     public void handleFailedLogin(String email) {
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setFailedAttempts(0);
             newUser.setBlocked(false);
+            newUser.setPassword("NOT_SYNCED_YET_" + UUID.randomUUID().toString());
             return userRepository.save(newUser);
         });
 
@@ -50,26 +54,6 @@ public class AuthService {
         
         userRepository.save(user);
     }
-//     @Transactional
-// public void handleFailedLogin(String email) {
-//     userRepository.findByEmail(email).ifPresent(user -> {
-
-//         int maxAttempts = configRepository.findById("max_login_attempts")
-//                 .map(AppConfig::getConfigValue)
-//                 .orElse(3);
-
-//         user.setFailedAttempts(user.getFailedAttempts() + 1);
-
-//         if (user.getFailedAttempts() >= maxAttempts) {
-//             user.setBlocked(true);
-//         }
-
-//         userRepository.save(user);
-//     });
-
-//     // ❌ si l'utilisateur n'existe pas → ON NE FAIT RIEN
-// }
-
 
     /**
      * REMPLACE LA MÉTHODE MANQUANTE :

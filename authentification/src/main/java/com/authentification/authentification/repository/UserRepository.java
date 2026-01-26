@@ -20,7 +20,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("UPDATE User u SET u.failedAttempts = 0, u.isBlocked = false WHERE u.id = :userId")
     void unlockUser(Long userId);
-
-    // Pour récupérer les utilisateurs bloqués
-    java.util.List<User> findByIsBlockedTrue();
 }
