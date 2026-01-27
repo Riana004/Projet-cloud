@@ -3,6 +3,9 @@ package com.authentification.authentification.service;
 import com.authentification.authentification.entity.User;
 import com.authentification.authentification.entity.AppConfig;
 import com.authentification.authentification.repository.UserRepository;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.UserRecord;
 import com.authentification.authentification.repository.AppConfigRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -19,17 +22,27 @@ public class AuthService {
     private final AppConfigRepository configRepository;
 
     /**
-     * Vérifie si l'utilisateur est bloqué dans la base PostgreSQL locale.
+     * Vérifie le blocage LOCAL et sur FIREBASE.
      */
-    public boolean isUserLocallyBlocked(String email) {
-        return userRepository.findByEmail(email)
+    public boolean isUserBlocked(String email) {
+        // 1. Check local
+        boolean locallyBlocked = userRepository.findByEmail(email)
                 .map(User::isBlocked)
                 .orElse(false);
+        
+        if (locallyBlocked) return true;
+
+        // 2. Check Firebase
+        try {
+            UserRecord userRecord = FirebaseAuth.getInstance().getUserByEmail(email);
+            return userRecord.isDisabled();
+        } catch (FirebaseAuthException e) {
+            return false; // Utilisateur inexistant sur Firebase
+        }
     }
 
     /**
-     * Incrémente les tentatives et bloque l'utilisateur si nécessaire.
-     * Crée l'utilisateur "à la volée" s'il n'existe pas encore localement.
+     * Incrémente localement et bloque sur les DEUX plateformes si max atteint.
      */
     @Transactional
     public void handleFailedLogin(String email) {
@@ -38,7 +51,7 @@ public class AuthService {
             newUser.setEmail(email);
             newUser.setFailedAttempts(0);
             newUser.setBlocked(false);
-            newUser.setPassword("NOT_SYNCED_YET_" + UUID.randomUUID().toString());
+            newUser.setPassword("FIREBASE_EXTERNAL");
             return userRepository.save(newUser);
         });
 
@@ -50,29 +63,52 @@ public class AuthService {
         
         if (user.getFailedAttempts() >= maxAttempts) {
             user.setBlocked(true);
+            // BLOQUER SUR FIREBASE
+            updateFirebaseUserStatus(email, true);
         }
         
         userRepository.save(user);
     }
 
     /**
-     * REMPLACE LA MÉTHODE MANQUANTE :
-     * Remet le compteur d'erreurs à 0 après un succès.
+     * Débloque l'utilisateur localement ET sur Firebase.
      */
     @Transactional
     public void resetAttempts(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             user.setFailedAttempts(0);
-            user.setBlocked(false); // Par sécurité on s'assure qu'il n'est plus bloqué
+            user.setBlocked(false);
             userRepository.save(user);
+            // DÉBLOQUER SUR FIREBASE
+            updateFirebaseUserStatus(email, false);
         });
     }
 
     /**
-     * API REST pour débloquer manuellement via ID.
+     * Unlock manuel via ID (ex: Admin panel).
      */
     @Transactional
     public void unlockUser(Long userId) {
-        userRepository.unlockUser(userId);
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setBlocked(false);
+            user.setFailedAttempts(0);
+            userRepository.save(user);
+            updateFirebaseUserStatus(user.getEmail(), false);
+        });
+    }
+
+    /**
+     * Méthode utilitaire pour communiquer avec Firebase.
+     */
+    private void updateFirebaseUserStatus(String email, boolean disable) {
+        try {
+            UserRecord userRecord = FirebaseAuth.getInstance().getUserByEmail(email);
+            UserRecord.UpdateRequest request = new UserRecord.UpdateRequest(userRecord.getUid())
+                    .setDisabled(disable);
+            FirebaseAuth.getInstance().updateUser(request);
+            System.out.println("Firebase: Statut mis à jour pour " + email + " (Disabled: " + disable + ")");
+        } catch (FirebaseAuthException e) {
+            System.err.println("Erreur Firebase lors de la mise à jour du statut: " + e.getMessage());
+        }
     }
 }
