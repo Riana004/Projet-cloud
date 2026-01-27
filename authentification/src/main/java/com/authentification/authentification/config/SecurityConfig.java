@@ -23,6 +23,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/auth/login-firebase").permitAll()
+                .requestMatchers("/api/auth/blocked").permitAll()
+                .requestMatchers("/api/auth/unlock").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             );
