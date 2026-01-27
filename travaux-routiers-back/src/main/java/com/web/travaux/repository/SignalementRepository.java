@@ -6,10 +6,11 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.web.travaux.entity.Signalement;
+import com.web.travaux.entity.StatutSignalement;
 
 import java.util.Optional;
 
 @Repository
 public interface SignalementRepository extends JpaRepository<Signalement, Long> {
-    
+    Optional<Signalement> findByIdUtilisateur(String utilisateurId);
 }

@@ -20,7 +20,7 @@ public class LoginService {
 
     public String login(String email, String password) {
         // 1. Check sécurité locale (Postgres)
-        if (securityService.isUserLocallyBlocked(email)) {
+        if (securityService.isUserBlocked(email)) {
             throw new RuntimeException("Compte bloqué. Trop de tentatives infructueuses.");
         }
 
