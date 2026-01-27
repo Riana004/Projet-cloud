@@ -13,59 +13,63 @@ public class LoginService {
 
     private final LocalAuthService localAuth;
     private final FirebaseAuthService firebaseAuth;
-    private final AuthService securityService;
+    private final AuthService securityService; // C'est lui qui pilote Firebase + Postgres
     private final ConnectivityService connectivity;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // Injection via l'interface
+    private final PasswordEncoder passwordEncoder;
 
     public String login(String email, String password) {
-        // 1. Check sécurité locale (Postgres)
-        if (securityService.isUserLocallyBlocked(email)) {
-            throw new RuntimeException("Compte bloqué. Trop de tentatives infructueuses.");
+        // 1. Double Check Sécurité (Postgres + Firebase Status)
+        // On utilise la nouvelle méthode globale
+        if (securityService.isUserBlocked(email)) {
+            throw new RuntimeException("Compte suspendu ou bloqué. Veuillez contacter le support.");
         }
 
         boolean online = connectivity.isOnline();
         boolean isAuthenticated;
 
-        if (online) {
-            // 2. Tentative via Firebase (C'est lui le maître quand on a internet)
-            isAuthenticated = firebaseAuth.authenticate(email, password);
-            
-            if (isAuthenticated) {
-                // Si l'auth Firebase réussit, on synchronise le mot de passe localement
-                reconcileLocalPassword(email, password);
+        try {
+            if (online) {
+                // 2. Auth via Firebase
+                isAuthenticated = firebaseAuth.authenticate(email, password);
+                
+                if (isAuthenticated) {
+                    // Synchronisation du hash local
+                    reconcileLocalPassword(email, password);
+                }
+            } else {
+                // 2. Auth via Postgres (Mode Offline)
+                isAuthenticated = localAuth.authenticate(email, password);
             }
-        } else {
-            // 2. Tentative via Postgres (Mode Offline)
-            isAuthenticated = localAuth.authenticate(email, password);
-        }
 
-        // 3. Gestion des compteurs et retour
-        if (isAuthenticated) {
-            securityService.resetAttempts(email);
-            return "Connexion réussie (" + (online ? "Online" : "Offline") + ")";
-        } else {
-            // C'est ici que handleFailedLogin est appelé si l'auth échoue
+            // 3. Gestion du succès
+            if (isAuthenticated) {
+                securityService.resetAttempts(email); // Débloque local + Firebase
+                return "Connexion réussie (" + (online ? "Online" : "Offline") + ")";
+            } else {
+                // Cas où l'auth retourne false (rare selon ton implémentation Firebase)
+                securityService.handleFailedLogin(email);
+                throw new RuntimeException("Identifiants incorrects(nv).");
+            }
+
+        } catch (Exception e) {
+            // 4. Gestion de l'échec (Firebase lève souvent une exception en cas de 400/401)
             securityService.handleFailedLogin(email);
-            throw new RuntimeException("Identifiants incorrects.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 
-    /**
-     * Synchronise le mot de passe Firebase avec la base locale PostgreSQL.
-     */
     @Transactional
     private void reconcileLocalPassword(String email, String password) {
         userRepository.findByEmail(email).ifPresentOrElse(
             user -> {
-                // Mise à jour du hash local pour correspondre à la réalité Firebase
                 user.setPassword(passwordEncoder.encode(password));
-                user.setFailedAttempts(0); // Reset par sécurité
+                user.setFailedAttempts(0);
+                user.setBlocked(false);
                 userRepository.save(user);
                 System.out.println("Réconciliation : MDP local mis à jour pour " + email);
             },
             () -> {
-                // Création si l'utilisateur n'existe pas encore dans le Docker
                 User newUser = new User();
                 newUser.setEmail(email);
                 newUser.setPassword(passwordEncoder.encode(password));

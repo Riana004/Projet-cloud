@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18-alpine # Version plus légère et précise
+    image: postgres:18-alpine
     container_name: postgres_db
     environment:
       POSTGRES_USER: user
@@ -15,20 +15,23 @@ services:
       retries: 5
 
   app:
-    # REMPLACE image: par build:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    container_name: spring_app
+    build: .
+    container_name: spring_app_v2
     ports:
       - "8080:8080"
-    restart: on-failure
+    volumes:
+      - .:/app                     # Lie ton code source au conteneur
+      - maven-cache:/root/.m2      # Garde les dépendances en cache (évite le timeout TLS)
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/auth_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
-      # Ajoute ta clé Firebase ici si elle n'est pas dans ton application.properties
-      # FIREBASE_API_KEY: ta_cle_ici 
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    # On utilise mvn au lieu de java -jar pour le rechargement
+    command: mvn spring-boot:run
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  maven-cache:                     # Volume pour stocker les librairies Maven
