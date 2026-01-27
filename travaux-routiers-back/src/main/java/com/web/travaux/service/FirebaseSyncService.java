@@ -93,9 +93,11 @@ public class FirebaseSyncService {
                 }
 
                 // 📌 Statut
-                String statutLabel = doc.getString("statut");
+                String statutLabel = doc.getString("id_statut");
                 StatutSignalement statut = statutRepo.findByStatut(statutLabel != null ? statutLabel : "Nouveau");
                 s.setStatut(statut);
+
+                s.setUpdatedAt(ts.toSqlTimestamp());
 
                 signalementRepository.save(s);
             }
