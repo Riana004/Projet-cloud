@@ -17,3 +17,4 @@ Thumbs.db
 # Firebase credentials
 serviceAccountKey.json
 src/main/resources/**/serviceAccountKey.json
+**/serviceAccountKey.json
