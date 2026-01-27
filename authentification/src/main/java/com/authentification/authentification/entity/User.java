@@ -19,8 +19,10 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "failed_attempts", nullable = false)
     private int failedAttempts = 0;
 
+    @Column(name = "is_blocked", nullable = false)
     private boolean isBlocked = false;
 
     
