@@ -11,7 +11,6 @@ import org.springframework.web.cors.*;
 
 import java.util.List;
 
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
