@@ -38,6 +38,7 @@ public class ManagerReportController {
         return ResponseEntity.noContent().build();
     }
 
+<<<<<<< HEAD
     // @PostMapping("/sync")
     // public ResponseEntity<String> syncFirebase() {
     //     firebaseSyncService.syncReports(reportService.getAllReports());
@@ -50,5 +51,12 @@ public ResponseEntity<String> syncFirebase() {
     return ResponseEntity.ok("Synchronisation Firebase → PostgreSQL réussie");
 }
 
+=======
+    @PostMapping("/sync")
+    public ResponseEntity<String> syncFirebase() {
+        firebaseSyncService.syncReports(reportService.getAllReports());
+        return ResponseEntity.ok("Synchronisation Firebase réussie");
+    }
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 
 }

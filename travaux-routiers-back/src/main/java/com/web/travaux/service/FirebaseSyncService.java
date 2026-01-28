@@ -1,5 +1,6 @@
 package com.web.travaux.service;
 
+<<<<<<< HEAD
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,18 @@ public class FirebaseSyncService {
     private final SignalementRepository signalementRepository;
     private final StatutSignalementRepository statutRepo;
      private final Firestore firestore; 
+=======
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.google.firebase.database.FirebaseDatabase;
+import com.web.travaux.dto.ReportDTO;
+
+@Service
+public class FirebaseSyncService {
+
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
     public void syncReports(List<ReportDTO> reports) {
         reports.forEach(r ->
             FirebaseDatabase.getInstance()
@@ -35,6 +48,7 @@ public class FirebaseSyncService {
                 .setValueAsync(r)
         );
     }
+<<<<<<< HEAD
 
 
     @Transactional
@@ -85,4 +99,6 @@ public class FirebaseSyncService {
             throw new RuntimeException("Erreur sync Firebase → Postgres", e);
         }
     }
+=======
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 }

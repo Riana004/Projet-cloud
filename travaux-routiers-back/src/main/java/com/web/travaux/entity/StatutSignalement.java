@@ -4,6 +4,10 @@ package com.web.travaux.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.sql.Timestamp;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 @Entity
 @Table(name = "STATUT_SIGNALLEMENT")
 @Getter
@@ -25,5 +29,8 @@ public class StatutSignalement {
 
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 }
