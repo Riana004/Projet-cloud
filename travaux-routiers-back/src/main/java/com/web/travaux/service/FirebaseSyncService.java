@@ -3,7 +3,9 @@ package com.web.travaux.service;
 import java.time.LocalDateTime;
 
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -35,6 +37,71 @@ public class FirebaseSyncService {
                 .child(r.getId().toString())
                 .setValueAsync(r)
         );
+    }
+
+    @Transactional
+    public void syncFromPostgresToFirebase() {
+
+        try {
+            List<Signalement> signalements = signalementRepository.findAll();
+
+            for (Signalement s : signalements) {
+
+                String firebaseId = s.getIdUtilisateur();
+
+                if (firebaseId == null || firebaseId.isEmpty()) {
+                    System.out.println("⚠ Signalement local sans idUtilisateur, ignoré");
+                    continue;
+                }
+
+                Map<String, Object> data = new HashMap<>();
+
+                data.put("description", s.getDescription());
+                data.put("surface", s.getSurface());
+                data.put("budget", s.getBudget());
+                data.put("entreprise_concerne", s.getEntrepriseConcerne());
+
+                // 🌍 latitude / longitude → GeoPoint
+                if (s.getLatitude() != null && s.getLongitude() != null) {
+                    data.put(
+                        "location",
+                        new com.google.cloud.firestore.GeoPoint(
+                            s.getLatitude(),
+                            s.getLongitude()
+                        )
+                    );
+                }
+
+                // 🕒 date → Timestamp Firebase
+                if (s.getDateSignalement() != null) {
+                    data.put(
+                        "date_signalement",
+                        com.google.cloud.Timestamp.of(
+                            java.util.Date.from(
+                                s.getDateSignalement()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toInstant()
+                            )
+                        )
+                    );
+                }
+
+                // 📌 statut
+                if (s.getStatut() != null) {
+                    data.put("id_statut", s.getStatut().getStatut());
+                }
+
+                // 🔄 upsert Firebase
+                firestore
+                    .collection("signalements")
+                    .document(firebaseId)
+                    .set(data);
+
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur sync PostgreSQL → Firebase", e);
+        }
     }
 
 
@@ -106,5 +173,14 @@ public class FirebaseSyncService {
             throw new RuntimeException("Erreur sync Firebase → Postgres", e);
         }
     }
+
+    @Transactional
+public void syncAll() {
+    // 1️⃣ Firebase → PostgreSQL
+    syncFromFirebaseToPostgres();
+
+    // 2️⃣ PostgreSQL → Firebase
+    syncFromPostgresToFirebase();
+}
 
 }

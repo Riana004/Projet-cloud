@@ -27,10 +27,6 @@ public class AuthController {
                                 user.getId(),
                                 user.getEmail(),
                                 String.valueOf(user.getRole().getId()) // on renvoie l'id du rôle
-<<<<<<< HEAD
-=======
-
->>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
                         );
                         return ResponseEntity.ok(response);
                     } else {
