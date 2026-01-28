@@ -1,6 +1,7 @@
 package com.web.travaux.service;
 
 import java.time.LocalDateTime;
+
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,15 @@ public class FirebaseSyncService {
     private final SignalementRepository signalementRepository;
     private final StatutSignalementRepository statutRepo;
      private final Firestore firestore; 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.google.firebase.database.FirebaseDatabase;
+import com.web.travaux.dto.ReportDTO;
+
+@Service
+public class FirebaseSyncService {
     public void syncReports(List<ReportDTO> reports) {
         reports.forEach(r ->
             FirebaseDatabase.getInstance()

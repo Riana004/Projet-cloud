@@ -4,6 +4,10 @@ package com.web.travaux.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.sql.Timestamp;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 @Entity
 @Table(name = "users")
 @Getter @Setter 

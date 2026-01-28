@@ -14,8 +14,13 @@ com/web/travaux/controller/AuthController.class
 com/web/travaux/dto/SignalementSummaryResponse.class
 com/web/travaux/config/SecurityConfig.class
 com/web/travaux/dto/LoginResponse.class
+<<<<<<< HEAD
 com/web/travaux/controller/ReportController.class
 com/web/travaux/entity/User.class
+=======
+com/web/travaux/entity/User.class
+com/web/travaux/controller/ReportController.class
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 com/web/travaux/repository/SignalementRepository.class
 com/web/travaux/controller/SignalementController.class
 com/web/travaux/repository/UserRepository.class

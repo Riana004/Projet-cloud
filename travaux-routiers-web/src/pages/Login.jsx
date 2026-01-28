@@ -38,8 +38,13 @@ const handleSubmit = async (e) => {
 
     // 3️⃣ Navigation
     if (user.role === "1") navigate("/manager");
+<<<<<<< HEAD
     // else if (user.role === "2" || user.role === "3") navigate("/utilisateur");
     // else setError("Rôle inconnu");
+=======
+    else if (user.role === "2" || user.role === "3") navigate("/utilisateur");
+    else setError("Rôle inconnu");
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 
   } catch (err) {
     console.error(err);

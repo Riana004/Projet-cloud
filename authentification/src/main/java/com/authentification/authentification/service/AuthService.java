@@ -6,6 +6,12 @@ import com.authentification.authentification.repository.UserRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
+<<<<<<< HEAD
+=======
+
+import jakarta.annotation.PostConstruct;
+
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 import com.authentification.authentification.repository.AppConfigRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +30,15 @@ public class AuthService {
     /**
      * Vérifie le blocage LOCAL et sur FIREBASE.
      */
+<<<<<<< HEAD
+=======
+    @PostConstruct
+    public void checkVersion() {
+        System.out.println("=============================================");
+        System.out.println("BOOT STATUS : FIREBASE BLOCKING SYSTEM V2.0 ACTIVE");
+        System.out.println("=============================================");
+    }
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
     public boolean isUserBlocked(String email) {
         // 1. Check local
         boolean locallyBlocked = userRepository.findByEmail(email)
@@ -95,6 +110,7 @@ public class AuthService {
             userRepository.save(user);
             updateFirebaseUserStatus(user.getEmail(), false);
         });
+<<<<<<< HEAD
     }
 
     /**
@@ -110,5 +126,33 @@ public class AuthService {
         } catch (FirebaseAuthException e) {
             System.err.println("Erreur Firebase lors de la mise à jour du statut: " + e.getMessage());
         }
+=======
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
     }
+
+    /**
+     * Méthode utilitaire pour communiquer avec Firebase.
+     */
+    private void updateFirebaseUserStatus(String email, boolean disable) {
+    try {
+        UserRecord userRecord = FirebaseAuth.getInstance().getUserByEmail(email);
+        
+        // 1. On envoie l'ordre
+        UserRecord.UpdateRequest request = new UserRecord.UpdateRequest(userRecord.getUid())
+                .setDisabled(disable);
+        FirebaseAuth.getInstance().updateUser(request);
+        
+        // 2. On RE-DEMANDE l'utilisateur à Firebase immédiatement
+        UserRecord checkAgain = FirebaseAuth.getInstance().getUser(userRecord.getUid());
+        
+        if (checkAgain.isDisabled() == disable) {
+            System.out.println("✅ SYNCHRO RÉUSSIE : Firebase confirme le statut Disabled=" + disable);
+        } else {
+            System.err.println("❌ ÉCHEC SILENCIEUX : L'ordre a été envoyé mais Firebase renvoie toujours Disabled=" + checkAgain.isDisabled());
+        }
+
+    } catch (FirebaseAuthException e) {
+        System.err.println("❌ ERREUR API FIREBASE : " + e.getMessage());
+    }
+}
 }
