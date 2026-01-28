@@ -35,11 +35,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-<<<<<<< HEAD
         config.setAllowCredentials(true);
-=======
-        config.setAllowCredentials(false);
->>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

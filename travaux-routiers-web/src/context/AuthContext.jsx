@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import { createContext, useContext, useEffect, useState } from "react";
 import { loginFirebaseApi } from "../api/auth.api";
-=======
-import { createContext, useContext, useState } from "react";
-import { loginFirebaseApi, registerApi } from "../api/auth.api";
->>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 
 const AuthContext = createContext(null);
 
@@ -31,7 +26,6 @@ useEffect(() => {
 
 
   const login = async (email, password) => {
-<<<<<<< HEAD
   try {
     const res = await loginFirebaseApi({ email, password });
 
@@ -48,12 +42,6 @@ useEffect(() => {
   }
 };
 
-=======
-    const res = await loginFirebaseApi({ email, password });
-    setUser(res.data.user);
-    setToken(res.data.token);
-  };
->>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 
 
   const logout = () => {

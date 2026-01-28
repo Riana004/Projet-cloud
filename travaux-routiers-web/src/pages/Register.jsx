@@ -61,7 +61,6 @@ export default function Register() {
       <Navbar />
 
       <div className="container mt-5">
-<<<<<<< HEAD
         <h3 className="mb-4">Inscription</h3>
 
         {error && (
@@ -69,9 +68,6 @@ export default function Register() {
             {error}
           </div>
         )}
-=======
-        <h3>Inscription d'utilisateur</h3>
->>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7
 
         <form onSubmit={handleSubmit}>
           <input
