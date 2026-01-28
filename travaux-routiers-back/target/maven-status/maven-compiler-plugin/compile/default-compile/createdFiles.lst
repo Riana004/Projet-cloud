@@ -1,3 +1,6 @@
+com/web/travaux/service/FirebaseSyncService.class
+com/web/travaux/dto/UpdateReportDTO.class
+com/web/travaux/controller/ManagerReportController.class
 com/web/travaux/ServletInitializer.class
 com/web/travaux/entity/User$UserBuilder.class
 com/web/travaux/dto/LoginRequest.class
@@ -6,6 +9,7 @@ com/web/travaux/service/ReportService.class
 com/web/travaux/entity/StatutSignalement.class
 com/web/travaux/dto/ReportDTO.class
 com/web/travaux/dto/SignalementResponse.class
+com/web/travaux/config/FirebaseConfig.class
 com/web/travaux/controller/AuthController.class
 com/web/travaux/dto/SignalementSummaryResponse.class
 com/web/travaux/config/SecurityConfig.class
