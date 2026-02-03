@@ -12,8 +12,6 @@ import jakarta.annotation.PostConstruct;
 import com.authentification.authentification.repository.AppConfigRepository;
 import lombok.RequiredArgsConstructor;
 
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
