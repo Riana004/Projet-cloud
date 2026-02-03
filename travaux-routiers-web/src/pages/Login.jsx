@@ -14,17 +14,17 @@ const handleSubmit = async (e) => {
 
   try {
     // 1️⃣ Auth Firebase
-    const firebaseResponse = await loginFirebaseApi({ email, password });
-    if (!email || !password) {
-      setError("Email et mot de passe sont obligatoires");
-      return;
-    }
+    // const firebaseResponse = await loginFirebaseApi({ email, password });
+    // if (!email || !password) {
+    //   setError("Email et mot de passe sont obligatoires");
+    //   return;
+    // }
 
-    console.log("Firebase response:", firebaseResponse.data); // DEBUG
-    if (!firebaseResponse.data) {
-      setError("Identifiants invalides (Firebase)");
-      return;
-    }
+    // console.log("Firebase response:", firebaseResponse.data); // DEBUG
+    // if (!firebaseResponse.data) {
+    //   setError("Identifiants invalides (Firebase)");
+    //   return;
+    // }
 
     // 2️⃣ Auth rôle
     const roleResponse = await loginRoleApi({ email, password });

@@ -2,10 +2,10 @@ com/web/travaux/service/FirebaseSyncService.class
 com/web/travaux/dto/UpdateReportDTO.class
 com/web/travaux/controller/ManagerReportController.class
 com/web/travaux/ServletInitializer.class
-com/web/travaux/entity/User$UserBuilder.class
 com/web/travaux/dto/LoginRequest.class
-com/web/travaux/entity/StatutSignalement$StatutSignalementBuilder.class
+com/web/travaux/entity/User$UserBuilder.class
 com/web/travaux/service/ReportService.class
+com/web/travaux/entity/StatutSignalement$StatutSignalementBuilder.class
 com/web/travaux/entity/StatutSignalement.class
 com/web/travaux/dto/ReportDTO.class
 com/web/travaux/dto/SignalementResponse.class
@@ -19,8 +19,8 @@ com/web/travaux/entity/User.class
 com/web/travaux/repository/SignalementRepository.class
 com/web/travaux/controller/SignalementController.class
 com/web/travaux/repository/UserRepository.class
-com/web/travaux/entity/Role$RoleBuilder.class
 com/web/travaux/repository/RoleRepository.class
+com/web/travaux/entity/Role$RoleBuilder.class
 com/web/travaux/entity/Role.class
 com/web/travaux/repository/StatutSignalementRepository.class
 com/web/travaux/entity/Signalement$SignalementBuilder.class

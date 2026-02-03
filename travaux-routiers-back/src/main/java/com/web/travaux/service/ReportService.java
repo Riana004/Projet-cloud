@@ -32,7 +32,7 @@ public class ReportService {
         dto.setLatitude(s.getLatitude());
         dto.setLongitude(s.getLongitude());
         dto.setDate(s.getDateSignalement());
-        dto.setStatut(s.getStatut().getStatut()); // NOUVEAU / EN_COURS / TERMINE
+        dto.setStatut(s.getStatut() == null ? null : s.getStatut().getStatut()); // NOUVEAU / EN_COURS / TERMINE
         dto.setSurfaceM2(s.getSurface());
         dto.setBudget(s.getBudget());
         dto.setEntreprise(s.getEntrepriseConcerne());
