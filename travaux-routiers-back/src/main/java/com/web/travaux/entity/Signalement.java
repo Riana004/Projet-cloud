@@ -57,4 +57,7 @@ public class Signalement {
     @Column(name = "entreprise_concerne", nullable = false, length = 255)
     private String entrepriseConcerne;
 
+    @OneToMany(mappedBy = "signalement", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Photo> photos;
+
 }
