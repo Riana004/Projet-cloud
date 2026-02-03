@@ -140,10 +140,11 @@ export function useSignalementPhotos() {
         if (!photo.isUploaded) {
           uploadProgress.value[photo.id] = 0
           const url = await uploadPhoto(photo, signalementId)
-          if (url) {
-            uploadedUrls.push(url)
-            uploadProgress.value[photo.id] = 100
+          if (!url) {
+            throw new Error('Upload photo échoué. Vérifiez Firebase Storage et les règles.')
           }
+          uploadedUrls.push(url)
+          uploadProgress.value[photo.id] = 100
         } else {
           uploadedUrls.push(photo.uploadedUrl!)
         }

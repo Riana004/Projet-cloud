@@ -244,6 +244,10 @@ export async function updateSignalementWithPhotos(
   photoUrls: string[]
 ): Promise<void> {
   try {
+    console.log('📸 Début mise à jour photos pour signalement:', signalementId);
+    console.log('📸 Nombre de photos à ajouter:', photoUrls?.length || 0);
+    console.log('📸 URLs des photos:', photoUrls);
+
     const signalementsRef = collection(db, 'signalements');
     const signalementDocRef = doc(signalementsRef, signalementId);
     
@@ -253,12 +257,19 @@ export async function updateSignalementWithPhotos(
       updated_at: serverTimestamp()
     });
     
+    console.log('✅ Document signalement mis à jour avec photos_count:', photoUrls?.length || 0);
+    
     // Ajouter les photos à la table photos
-    for (const url of photoUrls) {
-      await addPhotoToSignalement(signalementId, url);
+    if (photoUrls && photoUrls.length > 0) {
+      for (let i = 0; i < photoUrls.length; i++) {
+        const url = photoUrls[i];
+        console.log(`📸 Ajout photo ${i + 1}/${photoUrls.length}:`, url);
+        const photoId = await addPhotoToSignalement(signalementId, url);
+        console.log(`✅ Photo ${i + 1} ajoutée avec ID:`, photoId);
+      }
     }
     
-    console.log('✅ Signalement mis à jour avec photos:', photoUrls.length);
+    console.log('✅ Signalement mis à jour avec photos:', photoUrls?.length || 0);
   } catch (error) {
     console.error('❌ Erreur mise à jour signalement:', error);
     throw error;

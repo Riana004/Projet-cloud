@@ -144,7 +144,7 @@ import {
 } from 'ionicons/icons'
 import { auth, getAllSignalements, getUserSignalements } from '@/firebase/firebase'
 import { useGeolocationMap } from '@/composables/useGeolocationMap'
-import { useSignalementNotificationsAdvanced } from '@/composables/useSignalementNotificationsAdvanced'
+import { useSignalementNotifications } from '@/composables/useSignalementNotificationsAdvanced'
 
 const router = useRouter()
 const mapElement = ref<HTMLDivElement>()
@@ -159,7 +159,7 @@ const {
   notifications, 
   unreadCount, 
   initialize: initNotifications 
-} = useSignalementNotificationsAdvanced()
+} = useSignalementNotifications()
 
 // État
 const signalements = ref<any[]>([])
@@ -178,9 +178,9 @@ const unreadNotifications = computed(() => unreadCount.value)
 const initializeMap = () => {
   if (!mapElement.value || map) return
 
-  // Créer la carte centrée sur la position actuelle ou Paris par défaut
-  const startLat = latitude.value || 48.8566
-  const startLng = longitude.value || 2.3522
+  // Créer la carte centrée sur la position actuelle ou Madagascar par défaut (Antananarivo)
+  const startLat = latitude.value || -18.8792
+  const startLng = longitude.value || 47.5079
 
   map = L.map(mapElement.value).setView([startLat, startLng], 13)
 
