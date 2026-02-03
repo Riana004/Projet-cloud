@@ -380,3 +380,187 @@ onBeforeUnmount(() => {
   z-index: 500;
 }
 </style>
+const isLoading = ref(true)
+const errorMessage = ref('')
+const showOnlyMine = ref(false)
+
+const filteredSignalements = computed(() => {
+  if (showOnlyMine.value && auth.currentUser) {
+    return signalements.value.filter(s => s.id_utilisateur === auth.currentUser?.uid)
+  }
+  return signalements.value
+})
+
+const toggleMySignalements = () => {
+  showOnlyMine.value = !showOnlyMine.value
+}
+
+const loadSignalements = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const allSignalements = await getAllSignalements()
+    signalements.value = allSignalements
+
+    if (auth.currentUser) {
+      const mySignalements = await getUserSignalements()
+      userSignalements.value = mySignalements
+    }
+
+    console.log('✅ Signalements chargés:', allSignalements.length)
+
+    // Initialiser l'écoute des notifications
+    if (auth.currentUser) {
+      await listenToStatusUpdates()
+    }
+  } catch (err: any) {
+    console.error('Erreur chargement:', err)
+    errorMessage.value = 'Impossible de charger les signalements'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const initializeMap = () => {
+  if (!mapElement.value) return
+
+  if (map) {
+    map.remove()
+  }
+
+  // Centrer sur la position de l'utilisateur ou France
+  const center: [number, number] = latitude.value && longitude.value 
+    ? [latitude.value, longitude.value]
+    : [46.2276, 2.2137] // Centre de la France
+
+  map = L.map(mapElement.value).setView(center, 12)
+
+  // Couche OpenStreetMap
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map)
+
+  // Ajouter la position de l'utilisateur
+  if (latitude.value && longitude.value) {
+    L.circleMarker([latitude.value, longitude.value], {
+      radius: 8,
+      fillColor: '#00a9ff',
+      color: '#0084ff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8
+    }).addTo(map).bindPopup('Votre position')
+  }
+
+  // Ajouter les marqueurs des signalements
+  updateMarkers()
+}
+
+const updateMarkers = () => {
+  if (!map) return
+
+  // Nettoyer les anciens marqueurs
+  markers.value.forEach((marker) => {
+    map!.removeLayer(marker)
+  })
+  markers.value.clear()
+
+  // Ajouter les nouveaux marqueurs
+  filteredSignalements.value.forEach((signalement) => {
+    const isMySignalement = auth.currentUser?.uid === signalement.id_utilisateur
+    const icon = L.icon({
+      iconUrl: isMySignalement
+        ? 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png'
+        : 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      iconSize: isMySignalement ? [32, 41] : [25, 41],
+      iconAnchor: isMySignalement ? [16, 41] : [12, 41]
+    })
+
+    const marker = L.marker([signalement.latitude, signalement.longitude], { icon })
+      .addTo(map!)
+      .bindPopup(createPopupContent(signalement))
+
+    markers.value.set(signalement.id, marker)
+  })
+}
+
+const createPopupContent = (signalement: any): string => {
+  const statusText = signalement.id_statut ? `Status: ${signalement.id_statut}` : 'Status: Nouveau'
+  const photosCount = signalement.photos_count || 0
+  const date = signalement.date_signalement 
+    ? new Date(signalement.date_signalement.seconds * 1000).toLocaleDateString('fr-FR')
+    : 'N/A'
+
+  return `
+    <div style="min-width: 200px;">
+      <h4>${signalement.description.substring(0, 50)}...</h4>
+      <p><strong>Type:</strong> ${signalement.description.split(']')[0].substring(1)}</p>
+      <p><strong>Surface:</strong> ${signalement.surface} m²</p>
+      <p><strong>Budget:</strong> ${signalement.budget} €</p>
+      <p><strong>${statusText}</strong></p>
+      <p><strong>📸 Photos:</strong> ${photosCount}</p>
+      <p><small>Date: ${date}</small></p>
+    </div>
+  `
+}
+
+watch(filteredSignalements, () => {
+  updateMarkers()
+})
+
+onMounted(async () => {
+  await loadSignalements()
+  setTimeout(() => {
+    initializeMap()
+  }, 100)
+})
+
+onBeforeUnmount(() => {
+  if (map) {
+    map.remove()
+    map = null
+  }
+})
+</script>
+
+<style scoped>
+.map-wrapper {
+  height: calc(100vh - 150px);
+  width: 100%;
+  position: relative;
+}
+
+.controls-container {
+  padding: 12px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  z-index: 10;
+}
+
+.legend {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 50;
+}
+</style>

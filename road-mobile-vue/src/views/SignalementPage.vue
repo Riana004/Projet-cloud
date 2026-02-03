@@ -10,25 +10,54 @@
     </ion-header>
 
     <ion-content class="ion-padding">
-      <!-- Indicateur de position GPS -->
-      <ion-card v-if="gpsStatus" :color="gpsStatus === 'success' ? 'success' : 'warning'">
+      <!-- État de la géolocalisation -->
+      <ion-card v-if="geoStatus" :color="geoStatus === 'success' ? 'success' : 'warning'">
         <ion-card-content>
-          <ion-icon :icon="gpsStatus === 'success' ? checkmarkCircle : warningOutline"></ion-icon>
-          {{ gpsMessage }}
+          <ion-icon 
+            :icon="geoStatus === 'success' ? checkmarkCircle : warningOutline"
+            style="margin-right: 8px"
+          ></ion-icon>
+          {{ geoMessage }} 
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Carte interactive Leaflet -->
+      <div class="map-container" v-if="!showFormOnly">
+        <div id="map" ref="mapElement" style="height: 300px; margin-bottom: 16px; border-radius: 8px;"></div>
+        <p style="font-size: 12px; color: #666; text-align: center;">
+          Cliquez sur la carte pour sélectionner la position du problème
+        </p>
+      </div>
+
+      <!-- Position GPS sélectionnée -->
+      <ion-card v-if="selectedLat && selectedLng">
+        <ion-card-header>
+          <ion-card-title>Position sélectionnée</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>
+            <strong>Latitude:</strong> {{ selectedLat.toFixed(6) }}<br>
+            <strong>Longitude:</strong> {{ selectedLng.toFixed(6) }}<br>
+            <strong>Précision:</strong> {{ geoAccuracy ? `${Math.round(geoAccuracy)}m` : 'N/A' }}
+          </p>
+          <ion-button expand="block" fill="outline" size="small" @click="useCurrentLocation">
+            <ion-icon :icon="navigateOutline" slot="start"></ion-icon>
+            Utiliser ma position actuelle
+          </ion-button>
         </ion-card-content>
       </ion-card>
 
       <!-- Type de problème -->
       <ion-item>
         <ion-label position="floating">Type de problème *</ion-label>
-        <ion-select v-model="type" interface="action-sheet" placeholder="Choisir">
-          <ion-select-option value="Nid de poule">Nid de poule</ion-select-option>
-          <ion-select-option value="Feu cassé">Feu cassé</ion-select-option>
-          <ion-select-option value="Accident">Accident</ion-select-option>
-          <ion-select-option value="Embouteillage">Embouteillage</ion-select-option>
-          <ion-select-option value="Route bloquée">Route bloquée</ion-select-option>
-          <ion-select-option value="Travaux">Travaux</ion-select-option>
-          <ion-select-option value="Autre">Autre</ion-select-option>
+        <ion-select v-model="problemType" interface="action-sheet" placeholder="Choisir">
+          <ion-select-option value="Nid de poule">🕳️ Nid de poule</ion-select-option>
+          <ion-select-option value="Feu cassé">🚦 Feu cassé</ion-select-option>
+          <ion-select-option value="Accident">💥 Accident</ion-select-option>
+          <ion-select-option value="Embouteillage">🚗 Embouteillage</ion-select-option>
+          <ion-select-option value="Route bloquée">🚫 Route bloquée</ion-select-option>
+          <ion-select-option value="Travaux">🏗️ Travaux</ion-select-option>
+          <ion-select-option value="Autre">❓ Autre</ion-select-option>
         </ion-select>
       </ion-item>
 
@@ -37,24 +66,93 @@
         <ion-label position="floating">Description *</ion-label>
         <ion-textarea
           v-model="description"
-          :rows="4"
-          placeholder="Décrivez le problème..."
+          :rows="3"
+          placeholder="Décrivez le problème en détail..."
         ></ion-textarea>
       </ion-item>
 
-      <!-- Position GPS -->
-      <ion-item v-if="latitude && longitude">
-        <ion-label>
-          <h3>Position GPS</h3>
-          <p>Lat: {{ latitude.toFixed(6) }}</p>
-          <p>Lng: {{ longitude.toFixed(6) }}</p>
-        </ion-label>
-        <ion-button slot="end" fill="clear" @click="refreshPosition">
-          <ion-icon :icon="refreshOutline"></ion-icon>
-        </ion-button>
+      <!-- Surface et Budget -->
+      <ion-row>
+        <ion-col size="6">
+          <ion-item>
+            <ion-label position="floating">Surface (m²) *</ion-label>
+            <ion-input v-model.number="surface" type="number" placeholder="Estimation"></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col size="6">
+          <ion-item>
+            <ion-label position="floating">Budget (€) *</ion-label>
+            <ion-input v-model.number="budget" type="number" placeholder="Estimation"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+      <!-- Entreprise concernée -->
+      <ion-item>
+        <ion-label position="floating">Entreprise concernée</ion-label>
+        <ion-input v-model="entreprise" type="text" placeholder="Optionnel"></ion-input>
       </ion-item>
 
-      <!-- Message d'erreur -->
+      <!-- Ajouter des photos -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>Photos ({{ photosCount }}/5)</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-row>
+            <ion-col size="6">
+              <ion-button 
+                expand="block" 
+                fill="outline"
+                @click="capturePhoto"
+                :disabled="photosCount >= 5 || isUploadingPhotos"
+              >
+                <ion-icon :icon="cameraOutline" slot="start"></ion-icon>
+                Prendre photo
+              </ion-button>
+            </ion-col>
+            <ion-col size="6">
+              <ion-button 
+                expand="block"
+                fill="outline"
+                @click="selectPhotoFromGallery"
+                :disabled="photosCount >= 5 || isUploadingPhotos"
+              >
+                <ion-icon :icon="imageOutline" slot="start"></ion-icon>
+                Galerie
+              </ion-button>
+            </ion-col>
+          </ion-row>
+
+          <!-- Afficher les photos -->
+          <div v-if="photos.length > 0" style="margin-top: 16px;">
+            <ion-grid>
+              <ion-row>
+                <ion-col size="4" v-for="(photo, index) in photos" :key="photo.id">
+                  <div class="photo-preview">
+                    <img :src="photo.url" :alt="`Photo ${index + 1}`" />
+                    <ion-button 
+                      size="small"
+                      fill="clear"
+                      color="danger"
+                      @click="removePhoto(photo.id)"
+                      style="margin: 0; position: absolute; top: 0; right: 0;"
+                    >
+                      <ion-icon :icon="closeOutline"></ion-icon>
+                    </ion-button>
+                  </div>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </div>
+
+          <ion-text v-if="uploadError" color="danger">
+            <p>{{ uploadError }}</p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Message d'erreur général -->
       <ion-text v-if="errorMessage" color="danger">
         <p>{{ errorMessage }}</p>
       </ion-text>
@@ -62,18 +160,19 @@
       <!-- Bouton d'envoi -->
       <ion-button 
         expand="block" 
-        @click="send"
-        :disabled="loading || !latitude || !longitude"
-        style="margin-top: 20px"
+        @click="submitSignalement"
+        :disabled="!isFormValid || loading"
+        style="margin-top: 20px; margin-bottom: 20px;"
+        size="large"
       >
-        <ion-spinner v-if="loading" name="crescent"></ion-spinner>
+        <ion-spinner v-if="loading" name="crescent" style="margin-right: 8px;"></ion-spinner>
         <span v-else>Envoyer le signalement</span>
       </ion-button>
 
-      <!-- Message de succès -->
+      <!-- Toast de succès -->
       <ion-toast
         :is-open="showSuccessToast"
-        message="✅ Signalement envoyé avec succès !"
+        message="✅ Signalement envoyé avec succès!"
         :duration="2000"
         color="success"
         @didDismiss="showSuccessToast = false"
@@ -83,80 +182,193 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
+import L from 'leaflet'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonItem, IonLabel, IonSelect, IonSelectOption, IonTextarea,
   IonButton, IonButtons, IonBackButton, IonCard, IonCardContent,
-  IonIcon, IonText, IonSpinner, IonToast
+  IonCardHeader, IonCardTitle, IonIcon, IonText, IonSpinner, IonToast,
+  IonInput, IonRow, IonCol, IonGrid
 } from '@ionic/vue'
-import { checkmarkCircle, warningOutline, refreshOutline } from 'ionicons/icons'
-import { addDoc, collection, Timestamp } from 'firebase/firestore'
-import { db, auth } from '@/firebase/firebase'
+import {
+  checkmarkCircle, warningOutline, refreshOutline, cameraOutline,
+  imageOutline, closeOutline, navigateOutline
+} from 'ionicons/icons'
+import { auth, createSignalement, updateSignalementWithPhotos } from '@/firebase/firebase'
+import { useGeolocationMap } from '@/composables/useGeolocationMap'
+import { useSignalementPhotos } from '@/composables/useSignalementPhotos'
 
 const router = useRouter()
+const mapElement = ref<HTMLDivElement>()
+let map: L.Map | null = null
+let marker: L.Marker | null = null
 
-const type = ref('')
+// Géolocalisation
+const { 
+  latitude: geoLat, 
+  longitude: geoLng, 
+  accuracy: geoAccuracy,
+  isLoading: geoLoading,
+  error: geoError,
+  getCurrentPosition
+} = useGeolocationMap()
+
+// Photos
+const {
+  photos,
+  photosCount,
+  isUploading: isUploadingPhotos,
+  uploadError,
+  capturePhoto: capturePhotoAction,
+  selectPhotoFromGallery: selectPhotoAction,
+  uploadAllPhotos,
+  removePhoto: removePhotoAction,
+  getUploadedPhotoUrls
+} = useSignalementPhotos()
+
+// Formulaire
+const problemType = ref('')
 const description = ref('')
-const latitude = ref(0)
-const longitude = ref(0)
+const surface = ref<number | null>(null)
+const budget = ref<number | null>(null)
+const entreprise = ref('')
+const selectedLat = ref<number | null>(null)
+const selectedLng = ref<number | null>(null)
 const errorMessage = ref('')
 const loading = ref(false)
-const gpsStatus = ref<'loading' | 'success' | 'error' | null>('loading')
-const gpsMessage = ref('Récupération de votre position...')
 const showSuccessToast = ref(false)
+const showFormOnly = ref(true)
+const geoStatus = ref<'loading' | 'success' | 'error' | null>('loading')
+const geoMessage = ref('Récupération de votre position...')
 
-onMounted(() => {
-  getPosition()
+const isFormValid = computed(() => {
+  return (
+    problemType.value &&
+    description.value.trim() &&
+    surface.value && surface.value > 0 &&
+    budget.value && budget.value > 0 &&
+    selectedLat.value &&
+    selectedLng.value &&
+    auth.currentUser
+  )
 })
 
-async function getPosition() {
-  gpsStatus.value = 'loading'
-  gpsMessage.value = 'Récupération de votre position...'
-
+onMounted(async () => {
   try {
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      })
-    })
-
-    latitude.value = position.coords.latitude
-    longitude.value = position.coords.longitude
-    gpsStatus.value = 'success'
-    gpsMessage.value = `📍 Position récupérée (précision: ${Math.round(position.coords.accuracy)}m)`
+    // Récupérer la position GPS
+    await getCurrentPosition()
     
-  } catch (error) {
-    console.error('Erreur GPS:', error)
-    gpsStatus.value = 'error'
-    gpsMessage.value = '⚠️ Impossible de récupérer votre position. Activez le GPS.'
-    errorMessage.value = 'GPS requis pour créer un signalement'
+    if (geoLat.value && geoLng.value) {
+      selectedLat.value = geoLat.value
+      selectedLng.value = geoLng.value
+      geoStatus.value = 'success'
+      geoMessage.value = `✅ Position récupérée (précision: ${Math.round(geoAccuracy.value || 0)}m)`
+      
+      // Initialiser la carte
+      setTimeout(() => {
+        initializeMap()
+      }, 100)
+    } else {
+      geoStatus.value = 'error'
+      geoMessage.value = '⚠️ Impossible de récupérer votre position'
+    }
+  } catch (err) {
+    console.error('Erreur initialisation:', err)
+    geoStatus.value = 'error'
+    geoMessage.value = '⚠️ Vérifiez vos paramètres de localisation'
+  }
+})
+
+const initializeMap = () => {
+  if (!mapElement.value || !selectedLat.value || !selectedLng.value) return
+
+  if (map) {
+    map.remove()
+  }
+
+  map = L.map(mapElement.value).setView([selectedLat.value, selectedLng.value], 16)
+
+  // Couche OpenStreetMap
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map)
+
+  // Marker pour la position sélectionnée
+  addMarker(selectedLat.value, selectedLng.value)
+
+  // Événement clic pour sélectionner une position
+  map.on('click', (e: any) => {
+    selectedLat.value = e.latlng.lat
+    selectedLng.value = e.latlng.lng
+    addMarker(e.latlng.lat, e.latlng.lng)
+  })
+
+  showFormOnly.value = false
+}
+
+const addMarker = (lat: number, lng: number) => {
+  if (!map) return
+
+  if (marker) {
+    map.removeLayer(marker)
+  }
+
+  marker = L.marker([lat, lng], {
+    icon: L.icon({
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41]
+    })
+  }).addTo(map)
+  
+  marker.bindPopup(`${lat.toFixed(6)}, ${lng.toFixed(6)}`)
+}
+
+const useCurrentLocation = async () => {
+  try {
+    await getCurrentPosition()
+    if (geoLat.value && geoLng.value) {
+      selectedLat.value = geoLat.value
+      selectedLng.value = geoLng.value
+      if (map) {
+        map.setView([geoLat.value, geoLng.value], 16)
+        addMarker(geoLat.value, geoLng.value)
+      }
+    }
+  } catch (err) {
+    errorMessage.value = 'Impossible de récupérer votre position actuelle'
   }
 }
 
-async function refreshPosition() {
-  await getPosition()
+const capturePhoto = async () => {
+  try {
+    await capturePhotoAction()
+  } catch (err) {
+    console.error('Erreur capture:', err)
+  }
 }
 
-async function send() {
+const selectPhotoFromGallery = async () => {
+  try {
+    await selectPhotoAction()
+  } catch (err) {
+    console.error('Erreur galerie:', err)
+  }
+}
+
+const removePhoto = (photoId: string) => {
+  removePhotoAction(photoId)
+}
+
+const submitSignalement = async () => {
   errorMessage.value = ''
 
-  // Validation des champs
-  if (!type.value || type.value.trim() === '') {
-    errorMessage.value = 'Veuillez sélectionner un type de problème'
-    return
-  }
-
-  if (!description.value || description.value.trim() === '') {
-    errorMessage.value = 'Veuillez entrer une description'
-    return
-  }
-
-  if (!latitude.value || !longitude.value) {
-    errorMessage.value = 'Position GPS non disponible'
+  if (!isFormValid.value) {
+    errorMessage.value = 'Veuillez remplir tous les champs obligatoires'
     return
   }
 
@@ -168,53 +380,89 @@ async function send() {
   loading.value = true
 
   try {
-    // Préparation des données
-    const signalementData = {
-      type: type.value.trim(),
-      description: description.value.trim(),
-      latitude: latitude.value,
-      longitude: longitude.value,
-      status: 'nouveau',
-      date: Timestamp.now(),
-      userId: auth.currentUser.uid,
-      userEmail: auth.currentUser.email || 'Anonyme'
+    // Créer le signalement
+    const signalementId = await createSignalement({
+      id_utilisateur: auth.currentUser.uid,
+      description: `[${problemType.value}] ${description.value.trim()}`,
+      latitude: selectedLat.value!,
+      longitude: selectedLng.value!,
+      surface: surface.value || 0,
+      budget: budget.value || 0,
+      entreprise_concerne: entreprise.value.trim() || 'Non spécifiée',
+      id_statut: null,
+      is_dirty: false
+    })
+
+    // Uploader les photos et mettre à jour le signalement
+    if (photos.value.length > 0) {
+      const photoUrls = await uploadAllPhotos(signalementId)
+      await updateSignalementWithPhotos(signalementId, photoUrls)
     }
 
-    // Enregistrement dans Firebase
-    await addDoc(collection(db, 'signalements'), signalementData)
-
-    console.log('✅ Signalement enregistré:', signalementData)
-
-    // Réinitialisation du formulaire
-    type.value = ''
+    // Réinitialiser le formulaire
+    problemType.value = ''
     description.value = ''
+    surface.value = null
+    budget.value = null
+    entreprise.value = ''
     showSuccessToast.value = true
 
-    // Retour à la carte après 1.5s
+    // Redirection
     setTimeout(() => {
       router.push('/carte')
     }, 1500)
-
-  } catch (error) {
-    console.error('❌ Erreur enregistrement:', error)
-    errorMessage.value = 'Erreur réseau. Vérifiez votre connexion internet.'
+  } catch (error: any) {
+    console.error('Erreur:', error)
+    errorMessage.value = `Erreur: ${error.message || 'Impossible de créer le signalement'}`
   } finally {
     loading.value = false
   }
 }
+
+onBeforeUnmount(() => {
+  if (map) {
+    map.remove()
+    map = null
+  }
+})
 </script>
 
 <style scoped>
-ion-card {
-  margin: 0 0 16px 0;
+.map-container {
+  margin: 16px 0;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-ion-card ion-icon {
-  margin-right: 8px;
-  vertical-align: middle;
+.photo-preview {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;
+  background: #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.photo-preview img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+ion-card {
+  margin: 16px 0;
 }
 
 ion-item {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+ion-row {
+  margin-bottom: 12px;
 }
 </style>

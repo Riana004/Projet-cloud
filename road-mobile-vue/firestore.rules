@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isBlocked() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/login_attempts/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/login_attempts/$(request.auth.token.email)).data.disabled == true;
+    }
+
+    // Règles pour la collection signalements
+    match /signalements/{signalement} {
+      allow read: if true; // Tout le monde peut lire
+      allow create: if request.auth != null && !isBlocked(); // Seuls les utilisateurs authentifiés peuvent créer
+      allow update, delete: if request.auth != null && !isBlocked() && request.auth.uid == resource.data.id_utilisateur;
+    }
+    
+    // Règles pour la collection photos
+    match /photos/{photo} {
+      allow read: if true; // Tout le monde peut voir les photos
+      allow create: if request.auth != null && !isBlocked(); // Seuls les utilisateurs authentifiés peuvent ajouter des photos
+      allow delete: if request.auth != null && !isBlocked() && 
+                      exists(/databases/$(database)/documents/signalements/$(resource.data.id_signalement)) &&
+                      get(/databases/$(database)/documents/signalements/$(resource.data.id_signalement)).data.id_utilisateur == request.auth.uid;
+    }
+
+    // Règles pour la collection notifications
+    match /notifications/{notification} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId; // Chacun peut lire ses propres notifications
+      allow create, update: if request.auth != null; // Les admin cloud functions peuvent créer/mettre à jour
+    }
+
+    // Règles pour la collection statut_changes
+    match /statut_changes/{change} {
+      allow read: if request.auth != null && 
+                     exists(/databases/$(database)/documents/signalements/$(resource.data.signalementId)) &&
+                     get(/databases/$(database)/documents/signalements/$(resource.data.signalementId)).data.id_utilisateur == request.auth.uid;
+      allow create: if request.auth != null;
+    }
+    
+    // Règles pour la collection login_attempts
+    match /login_attempts/{email} {
+      allow read: if true; // Permettre la lecture pour vérifier le statut
+      allow write: if true; // Permettre l'écriture pour le système de tentatives
+    }
+  }
+}

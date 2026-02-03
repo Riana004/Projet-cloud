@@ -7,7 +7,7 @@
         </ion-buttons>
         <ion-title>Signalements routiers</ion-title>
         <ion-buttons slot="end">
-          <ion-badge v-if="unreadNotifications > 0" color="danger" style="margin-right: 8px;">
+          <ion-badge v-if="unreadNotifications > 0" color="danger">
             {{ unreadNotifications }}
           </ion-badge>
           <ion-button @click="showNotifications = true">
@@ -113,6 +113,7 @@
             v-for="notif in notifications" 
             :key="notif.id"
             button
+            @click="viewSignalement(notif.signalementId)"
           >
             <ion-label>
               <h3>{{ notif.message }}</h3>
@@ -287,6 +288,9 @@ const displaySignalements = () => {
     `
 
     marker.bindPopup(popupContent)
+    marker.on('click', () => {
+      // Optionnel: navigation vers les détails du signalement
+    })
 
     markers.value.set(sig.id, marker)
   })
@@ -307,6 +311,14 @@ const centerMapOnUser = () => {
   if (map && latitude.value && longitude.value) {
     map.setView([latitude.value, longitude.value], 13)
   }
+}
+
+/**
+ * Affiche un signalement
+ */
+const viewSignalement = (id: string) => {
+  showNotifications.value = false
+  router.push(`/signalement/${id}`)
 }
 
 /**
