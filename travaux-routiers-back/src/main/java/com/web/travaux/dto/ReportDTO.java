@@ -15,6 +15,7 @@ public class ReportDTO {
     private Double longitude;
     private LocalDateTime date;
     private String statut;
+    private Double pourcentage;
     private Double surfaceM2;
     private Double budget;
     private String entreprise;

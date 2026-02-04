@@ -99,15 +99,15 @@ export default function MapView({ reports }) {
           <Popup>
             <strong>{r.description}</strong>
             <br />
-            📅 Date : {new Date(r.date).toLocaleDateString()}
+            📅 Date : {new Date(r.dateSignalement).toLocaleDateString()}
             <br />
             🏷 Statut : {r.statut.statut} - {r.statut.pourcentage}
             <br />
-            📐 Surface : {r.surfaceM2} m²
+            📐 Surface : {r.surface} m²
             <br />
             💰 Budget : {r.budget?.toLocaleString()} Ar
             <br />
-            🏗 Entreprise : {r.entreprise}
+            🏗 Entreprise : {r.entrepriseConcerne}
 
             <hr />
             <strong>Photos :</strong>
