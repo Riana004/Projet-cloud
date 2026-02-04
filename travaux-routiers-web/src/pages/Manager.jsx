@@ -5,7 +5,7 @@ import StatsTable from "../components/StatsTable";
 import ReportTable from "../components/ReportTable";
 import UserBlockedTable from "../components/UserBlockedTable";
 import { fetchReports } from "../api/map.api";
-import { syncFirebase } from "../api/manager.api";
+import { syncFirebase, syncLocal } from "../api/manager.api";
 
 export default function Manager() {
   const [reports, setReports] = useState([]);
@@ -29,7 +29,17 @@ export default function Manager() {
               .then(() => alert("Synchronisation réussie"))
           }
         >
-          🔄 Synchroniser Firebase
+          🔄 Synchroniser Firebase to Local
+        </button>
+
+        <button
+          className="btn btn-primary mb-3"
+          onClick={() =>
+            syncLocal()
+              .then(() => alert("Synchronisation réussie"))
+          }
+        >
+          🔄 Synchronise Local to Firebase
         </button>
 
         <StatsTable reports={reports} />

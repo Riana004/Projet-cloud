@@ -174,13 +174,6 @@ public class FirebaseSyncService {
         }
     }
 
-    @Transactional
-    public void syncAll() {
-        // 1️⃣ Firebase → PostgreSQL
-        syncFromFirebaseToPostgres();
 
-        // 2️⃣ PostgreSQL → Firebase
-        syncFromPostgresToFirebase();
-    }
 
 }

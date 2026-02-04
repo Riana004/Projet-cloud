@@ -1,104 +1,82 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView({ reports }) {
-  const tileUrl = "http://localhost:8080/styles/basic/{z}/{x}/{y}.png";
-  // const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-  const attribution = "© OpenStreetMap contributors (offline tiles)";
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8086";
+
   const mockReports = [
     {
       id: "sig-1",
-      lat: -18.9097,
-      lng: 47.5255,
+      latitude: -18.9097,
+      longitude: 47.5255,
       description: "Nid de poule - Avenue de l'Indépendance",
       date: "2026-01-12",
-      status: "nouveau",
+      statut: "nouveau",
       surfaceM2: 12.5,
       budget: 1200000,
       entreprise: "Rivo TP",
     },
-    {
-      id: "sig-2",
-      lat: -18.8735,
-      lng: 47.5119,
-      description: "Chaussée dégradée - Ankorondrano",
-      date: "2026-01-08",
-      status: "en cours",
-      surfaceM2: 45.0,
-      budget: 4500000,
-      entreprise: "Saha Routes",
-    },
-    {
-      id: "sig-3",
-      lat: -18.8792,
-      lng: 47.5042,
-      description: "Tranchée ouverte - Tsaralalana",
-      date: "2025-12-28",
-      status: "terminé",
-      surfaceM2: 8.2,
-      budget: 900000,
-      entreprise: "Tanà Infra",
-    },
   ];
-  const items = reports && reports.length > 0 ? reports : mockReports;
+
+  const items = reports?.length ? reports : mockReports;
+
   const [apiReports, setApiReports] = useState([]);
-  const [apiSummary, setApiSummary] = useState(null);
+  const [photosByReport, setPhotosByReport] = useState({});
   const [apiError, setApiError] = useState("");
 
+  // ================= LOAD SIGNALMENTS =================
   useEffect(() => {
     const controller = new AbortController();
+
     const load = async () => {
       try {
-        const [listRes, summaryRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/signalements`, { signal: controller.signal, mode: "cors" }),
-          fetch(`${apiBaseUrl}/api/signalements/summary`, { signal: controller.signal, mode: "cors" }),
-        ]);
-        if (listRes.ok) {
-          const list = await listRes.json();
-          setApiReports(Array.isArray(list) ? list : []);
-          setApiError("");
-        } else {
-          setApiError(`API signalements: ${listRes.status}`);
-        }
-        if (summaryRes.ok) {
-          const summary = await summaryRes.json();
-          setApiSummary(summary);
-          setApiError("");
-        } else {
-          setApiError(`API summary: ${summaryRes.status}`);
-        }
-      } catch (error) {
-        if (error.name !== "AbortError") {
+        const res = await fetch(`${apiBaseUrl}/api/signalements`, {
+          signal: controller.signal,
+        });
+
+        if (!res.ok) throw new Error(`API ${res.status}`);
+
+        const list = await res.json();
+        setApiReports(Array.isArray(list) ? list : []);
+      } catch (e) {
+        if (e.name !== "AbortError") {
           setApiReports([]);
-          setApiSummary(null);
-          setApiError(error?.message || "Erreur API");
+          setApiError(e.message);
         }
       }
     };
+
     load();
     return () => controller.abort();
   }, [apiBaseUrl]);
 
-  const activeItems = apiReports.length > 0 ? apiReports : items;
+  // ================= LOAD PHOTOS =================
+  const loadPhotos = async (id) => {
+    if (photosByReport[id]) return;
 
-  const totalPoints = apiSummary?.totalPoints ?? activeItems.length;
-  const totalSurface = apiSummary?.totalSurface ?? activeItems.reduce(
-    (sum, item) => sum + (Number(item.surfaceM2) || 0),
-    0
-  );
-  const totalBudget = apiSummary?.totalBudget ?? activeItems.reduce(
-    (sum, item) => sum + (Number(item.budget) || 0),
-    0
-  );
-  const completedCount = activeItems.filter((item) => item.status === "terminé").length;
-  const progressPercent = apiSummary?.progressPercent ?? (totalPoints === 0 ? 0 : Math.round((completedCount / totalPoints) * 100));
-  const formatMoney = (value) =>
-    new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
-  const formatSurface = (value) =>
-    new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/signalements/${id}/photos`);
+      if (!res.ok) throw new Error("Erreur photos");
 
+      const data = await res.json();
+
+      setPhotosByReport((prev) => ({
+        ...prev,
+        [id]: data,
+      }));
+    } catch (e) {
+      console.error("Photos error:", e);
+      setPhotosByReport((prev) => ({
+        ...prev,
+        [id]: [],
+      }));
+    }
+  };
+
+  const activeItems = apiReports.length ? apiReports : items;
+
+  // ================= MAP =================
   return (
     <MapContainer
       center={[-18.8792, 47.5079]}
@@ -110,28 +88,54 @@ export default function MapView({ reports }) {
         attribution="&copy; OpenStreetMap contributors"
       />
 
-      {reports.map((r) => (
+      {activeItems.map((r) => (
         <Marker
           key={r.id}
           position={[r.latitude, r.longitude]}
+          eventHandlers={{
+            click: () => loadPhotos(r.id),
+          }}
         >
           <Popup>
             <strong>{r.description}</strong>
             <br />
             📅 Date : {new Date(r.date).toLocaleDateString()}
             <br />
-            🏷 Statut : {r.statut}
+            🏷 Statut : {r.statut.statut} - {r.statut.pourcentage}
             <br />
             📐 Surface : {r.surfaceM2} m²
             <br />
-            💰 Budget : {r.budget.toLocaleString()} Ar
+            💰 Budget : {r.budget?.toLocaleString()} Ar
             <br />
             🏗 Entreprise : {r.entreprise}
+
+            <hr />
+            <strong>Photos :</strong>
+
+            {!photosByReport[r.id] ? (
+              <p>Chargement...</p>
+            ) : photosByReport[r.id].length === 0 ? (
+              <p>Aucune photo</p>
+            ) : (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {photosByReport[r.id].map((p) => (
+                  <img
+                    key={p.id}
+                    src={p.url}
+                    alt="photo"
+                    style={{
+                      width: 90,
+                      height: 90,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </Popup>
         </Marker>
       ))}
     </MapContainer>
-  // const tileUrl = "http://localhost:8080/styles/basic/{z}/{x}/{y}.png";
-
   );
 }

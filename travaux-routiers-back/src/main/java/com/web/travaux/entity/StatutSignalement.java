@@ -26,7 +26,7 @@ public class StatutSignalement {
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
 
-    @Column(name = "pourcentage", nullable = false)
-    private double pourcentage;
+    @Column(name = "pourcentage", nullable = true)
+    private Double pourcentage;
 
 }
