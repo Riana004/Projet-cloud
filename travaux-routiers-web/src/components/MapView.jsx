@@ -3,65 +3,80 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView({ reports }) {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8086";
+
+  const mockReports = [
+    {
+      id: "sig-1",
+      latitude: -18.9097,
+      longitude: 47.5255,
+      description: "Nid de poule - Avenue de l'Indépendance",
+      date: "2026-01-12",
+      statut: "nouveau",
+      surfaceM2: 12.5,
+      budget: 1200000,
+      entreprise: "Rivo TP",
+    },
+  ];
+
+  const items = reports?.length ? reports : mockReports;
 
   const [apiReports, setApiReports] = useState([]);
-  const [photosByReport, setPhotosByReport] = useState({}); // cache photos
+  const [photosByReport, setPhotosByReport] = useState({});
   const [apiError, setApiError] = useState("");
 
-  // Charger les signalements
+  // ================= LOAD SIGNALMENTS =================
   useEffect(() => {
     const controller = new AbortController();
 
-    const loadReports = async () => {
+    const load = async () => {
       try {
         const res = await fetch(`${apiBaseUrl}/api/signalements`, {
           signal: controller.signal,
-          mode: "cors",
         });
 
-        if (!res.ok) throw new Error(`API: ${res.status}`);
+        if (!res.ok) throw new Error(`API ${res.status}`);
 
         const list = await res.json();
         setApiReports(Array.isArray(list) ? list : []);
-        setApiError("");
-      } catch (error) {
-        if (error.name !== "AbortError") {
+      } catch (e) {
+        if (e.name !== "AbortError") {
           setApiReports([]);
-          setApiError(error.message || "Erreur API");
+          setApiError(e.message);
         }
       }
     };
 
-    loadReports();
+    load();
     return () => controller.abort();
   }, [apiBaseUrl]);
 
-  // Charger photos d’un signalement
-  const loadPhotos = async (signalementId) => {
-    // évite de recharger si déjà en cache
-    if (photosByReport[signalementId]) return;
+  // ================= LOAD PHOTOS =================
+  const loadPhotos = async (id) => {
+    if (photosByReport[id]) return;
 
     try {
-      const res = await fetch(
-        `${apiBaseUrl}/api/signalements/${signalementId}/photos`
-      );
+      const res = await fetch(`${apiBaseUrl}/api/signalements/${id}/photos`);
+      if (!res.ok) throw new Error("Erreur photos");
 
-      if (!res.ok) throw new Error("Erreur chargement photos");
-
-      const photos = await res.json();
+      const data = await res.json();
 
       setPhotosByReport((prev) => ({
         ...prev,
-        [signalementId]: photos,
+        [id]: data,
       }));
     } catch (e) {
-      console.error(e);
+      console.error("Photos error:", e);
+      setPhotosByReport((prev) => ({
+        ...prev,
+        [id]: [],
+      }));
     }
   };
 
-  const activeItems = apiReports.length > 0 ? apiReports : reports;
+  const activeItems = apiReports.length ? apiReports : items;
 
+  // ================= MAP =================
   return (
     <MapContainer
       center={[-18.8792, 47.5079]}
@@ -86,7 +101,7 @@ export default function MapView({ reports }) {
             <br />
             📅 Date : {new Date(r.date).toLocaleDateString()}
             <br />
-            🏷 Statut : {r.statut}
+            🏷 Statut : {r.statut.statut} - {r.statut.pourcentage}
             <br />
             📐 Surface : {r.surfaceM2} m²
             <br />
@@ -95,31 +110,28 @@ export default function MapView({ reports }) {
             🏗 Entreprise : {r.entreprise}
 
             <hr />
-
             <strong>Photos :</strong>
 
-            {photosByReport[r.id] ? (
-              photosByReport[r.id].length > 0 ? (
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {photosByReport[r.id].map((p) => (
-                    <img
-                      key={p.id}
-                      src={p.url}
-                      alt="photo"
-                      style={{
-                        width: 90,
-                        height: 90,
-                        objectFit: "cover",
-                        borderRadius: 6,
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p>Aucune photo</p>
-              )
-            ) : (
+            {!photosByReport[r.id] ? (
               <p>Chargement...</p>
+            ) : photosByReport[r.id].length === 0 ? (
+              <p>Aucune photo</p>
+            ) : (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {photosByReport[r.id].map((p) => (
+                  <img
+                    key={p.id}
+                    src={p.url}
+                    alt="photo"
+                    style={{
+                      width: 90,
+                      height: 90,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                    }}
+                  />
+                ))}
+              </div>
             )}
           </Popup>
         </Marker>
