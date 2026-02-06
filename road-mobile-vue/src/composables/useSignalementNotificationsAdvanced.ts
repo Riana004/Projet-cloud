@@ -25,12 +25,13 @@ export interface SignalementNotification {
 /**
  * Composable pour gérer les notifications de changement de statut
  */
-export function useSignalementNotifications() {
+export function useSignalementNotificationsAdvanced() {
   const db = getFirestore();
   const notifications = ref<SignalementNotification[]>([]);
   const unreadCount = ref<number>(0);
   const isListening = ref<boolean>(false);
   let unsubscribe: (() => void) | null = null;
+  const lastStatuses: Record<string, any> = {};
 
   /**
    * Demande la permission pour les notifications
@@ -93,7 +94,7 @@ export function useSignalementNotifications() {
 
       // Créer une requête pour écouter les signalements de l'utilisateur
       const constraints: QueryConstraint[] = [
-        where('userId', '==', auth.currentUser.uid)
+        where('id_utilisateur', '==', auth.currentUser.uid)
       ];
 
       const q = query(
@@ -106,13 +107,24 @@ export function useSignalementNotifications() {
         q,
         (snapshot) => {
           snapshot.docChanges().forEach((change) => {
-            if (change.type === 'modified') {
-              const doc = change.doc;
-              const data = doc.data() as any;
-              const previousData = change.doc.metadata.hasPendingWrites ? null : data;
+            const doc = change.doc;
+            const data = doc.data() as any;
 
-              // Vérifier si le statut a changé
-              if (data.statut && data.statut !== previousData?.statut) {
+            if (change.type === 'added') {
+              // Initialiser le statut connu
+              lastStatuses[doc.id] = data?.id_statut ?? data?.statut ?? null;
+              return;
+            }
+
+            if (change.type === 'modified') {
+              const previous = lastStatuses[doc.id];
+              const current = data?.id_statut ?? data?.statut ?? null;
+              // Mettre à jour la mémoire
+              lastStatuses[doc.id] = current;
+
+              // Si on a une valeur précédente et qu'elle diffère, notifier
+              if (previous !== undefined && previous !== null && current !== previous) {
+                const statutKey = String(current);
                 const statusMessages: { [key: string]: string } = {
                   'EN_ATTENTE': 'Votre signalement est en attente de traitement',
                   'EN_TRAITEMENT': 'Votre signalement est en traitement',
@@ -121,16 +133,16 @@ export function useSignalementNotifications() {
                   'CLOTURE': 'Votre signalement est clos',
                 };
 
-                const message = statusMessages[data.statut] || `Statut changé: ${data.statut}`;
+                const message = statusMessages[statutKey] || `Statut changé: ${statutKey}`;
 
                 // Ajouter à la liste des notifications
                 notifications.value.unshift({
                   id: doc.id,
                   signalementId: doc.id,
                   userId: auth.currentUser!.uid,
-                  statut: data.statut,
+                  statut: statutKey,
                   message,
-                  timestamp: data.updatedAt || Timestamp.now(),
+                  timestamp: data.updated_at || data.updatedAt || Timestamp.now(),
                   isRead: false,
                 });
 
@@ -210,3 +222,7 @@ export function useSignalementNotifications() {
     initialize,
   };
 }
+
+// Compatibilité: certaines vues importent l'ancien nom `useSignalementNotifications`.
+// On exporte un alias pour éviter de casser les imports existants.
+export { useSignalementNotificationsAdvanced as useSignalementNotifications };

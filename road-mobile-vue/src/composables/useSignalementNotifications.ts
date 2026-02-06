@@ -6,6 +6,8 @@ import {
   where,
   onSnapshot,
   Unsubscribe,
+  orderBy,
+  limit,
 } from 'firebase/firestore'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { auth } from '@/firebase/firebase'
@@ -63,56 +65,54 @@ export function useSignalementNotifications() {
       if (!initialized) {
         console.warn('Notifications non initialisées, continuant sans notifications locales')
       }
-
-      // Créer une requête pour tous les signalements de l'utilisateur
+      // Écouter la collection `notifications` créée par la Cloud Function
+      // C'est plus fiable: la fonction onSignalementStatusChange crée un doc dans `notifications`
       const q = query(
-        collection(db, 'signalements'),
-        where('id_utilisateur', '==', auth.currentUser.uid)
+        collection(db, 'notifications'),
+        where('userId', '==', auth.currentUser.uid),
+        orderBy('timestamp', 'desc'),
+        limit(20)
       )
 
-      // Écouter les changements en temps réel
       unsubscribe = onSnapshot(
         q,
         async (snapshot) => {
           snapshot.docChanges().forEach(async (change) => {
-            if (change.type === 'modified') {
-              const oldData = change.doc.data()
-              const newData = oldData
+            if (change.type === 'added') {
+              const newData = change.doc.data() as any
 
-              // Vérifier les changements de statut
-              if (change.doc.metadata.hasPendingWrites === false) {
-                const statusUpdate: SignalementStatusUpdate = {
-                  signalementId: change.doc.id,
-                  oldStatus: oldData.id_statut || 'Non défini',
-                  newStatus: newData.id_statut || 'Non défini',
-                  timestamp: new Date(),
-                  message: `Votre signalement a été mis à jour (Status: ${newData.id_statut || 'Nouveau'})`,
-                }
+              const statusUpdate: SignalementStatusUpdate = {
+                signalementId: newData.signalementId,
+                oldStatus: newData.ancienStatut || 'Non défini',
+                newStatus: newData.statut || newData.nouveauStatut || 'Non défini',
+                timestamp: new Date(),
+                message: newData.message || `Mise à jour du signalement: ${newData.statut || ''}`,
+              }
 
-                notifications.value.push(statusUpdate)
+              // Préfixer la liste (récent en premier)
+              notifications.value.unshift(statusUpdate)
 
-                // Envoyer une notification locale
-                try {
-                  await LocalNotifications.schedule({
-                    notifications: [
-                      {
-                        id: Math.floor(Math.random() * 10000),
-                        title: 'Mise à jour du signalement',
-                        body: statusUpdate.message,
-                        smallIcon: 'ic_stat_icon_config_sample',
-                        iconColor: '#488AFF',
-                      },
-                    ],
-                  })
-                } catch (notifErr) {
-                  console.warn('Impossible d\'envoyer la notification locale:', notifErr)
-                }
+              // Envoyer une notification locale
+              try {
+                await LocalNotifications.schedule({
+                  notifications: [
+                    {
+                      id: Math.floor(Math.random() * 10000),
+                      title: 'Mise à jour du signalement',
+                      body: statusUpdate.message,
+                      smallIcon: 'ic_stat_icon_config_sample',
+                      iconColor: '#488AFF',
+                    },
+                  ],
+                })
+              } catch (notifErr) {
+                console.warn('Impossible d\'envoyer la notification locale:', notifErr)
               }
             }
           })
         },
         (err: any) => {
-          console.error('Erreur lors de l\'écoute des signalements:', err)
+          console.error('Erreur lors de l\'écoute des notifications:', err)
           error.value = 'Erreur lors de l\'écoute des changements'
         }
       )

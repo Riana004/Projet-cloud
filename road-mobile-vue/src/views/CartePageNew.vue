@@ -167,6 +167,7 @@ const signalements = ref<any[]>([])
 const userSignalements = ref<any[]>([])
 const isLoading = ref<boolean>(false)
 const errorMessage = ref<string>('')
+const FILTER_KEY = 'showOnlyMine'
 const showOnlyMine = ref<boolean>(false)
 const showNotifications = ref<boolean>(false)
 
@@ -301,6 +302,7 @@ const displaySignalements = () => {
  */
 const toggleMySignalements = () => {
   showOnlyMine.value = !showOnlyMine.value
+  try { localStorage.setItem(FILTER_KEY, String(showOnlyMine.value)) } catch {}
   displaySignalements()
 }
 
@@ -345,6 +347,19 @@ onMounted(async () => {
 
   // Initialiser les notifications
   await initNotifications()
+
+  // Recharger les signalements lorsque l'utilisateur change (login/logout)
+  // (assure que la liste 'mes signalements' est mise à jour)
+  import { onAuthStateChanged } from 'firebase/auth'
+  onAuthStateChanged(auth, async () => {
+    try { await loadSignalements() } catch (e) { console.warn('reload signalements after auth change failed', e) }
+  })
+
+  // Restaurer le filtre depuis localStorage
+  try {
+    const raw = localStorage.getItem(FILTER_KEY)
+    if (raw !== null) showOnlyMine.value = raw === 'true'
+  } catch {}
 })
 
 onBeforeUnmount(() => {

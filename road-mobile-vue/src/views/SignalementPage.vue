@@ -258,11 +258,11 @@ const isFormValid = computed(() => {
 onMounted(async () => {
   try {
     // Récupérer la position GPS
-    await getCurrentPosition()
+    const pos = await getCurrentPosition()
     
-    if (geoLat.value && geoLng.value) {
-      selectedLat.value = geoLat.value
-      selectedLng.value = geoLng.value
+    if (pos && pos.latitude && pos.longitude) {
+      selectedLat.value = pos.latitude
+      selectedLng.value = pos.longitude
       geoStatus.value = 'success'
       geoMessage.value = `✅ Position récupérée (précision: ${Math.round(geoAccuracy.value || 0)}m)`
       
@@ -277,7 +277,7 @@ onMounted(async () => {
   } catch (err) {
     console.error('Erreur initialisation:', err)
     geoStatus.value = 'error'
-    geoMessage.value = '⚠️ Vérifiez vos paramètres de localisation'
+    geoMessage.value = '⚠️ Géolocalisation indisponible. Utilisez la carte pour sélectionner votre position.'
   }
 })
 
@@ -394,9 +394,17 @@ const submitSignalement = async () => {
     })
 
     // Uploader les photos et mettre à jour le signalement
+    let photoUrls: string[] = []
     if (photos.value.length > 0) {
-      const photoUrls = await uploadAllPhotos(signalementId)
+      photoUrls = await uploadAllPhotos(signalementId)
       await updateSignalementWithPhotos(signalementId, photoUrls)
+    }
+
+    // Log final pour confirmer l'envoi du signalement et des photos
+    try {
+      console.log('✅ Signalement envoyé avec succès', { signalementId, photoUrls, uploadedFromClient: getUploadedPhotoUrls() })
+    } catch (e) {
+      console.warn('⚠️ Impossible d\'afficher le log final du signalement:', e)
     }
 
     // Réinitialiser le formulaire

@@ -142,7 +142,7 @@ import {
   notificationsOutline,
   closeOutline 
 } from 'ionicons/icons'
-import { auth, getAllSignalements, getUserSignalements } from '@/firebase/firebase'
+import { auth, getAllSignalements, getUserSignalements, initMessaging, saveFcmToken, onForegroundMessageListener, onAuthStateChangeListener } from '@/firebase/firebase'
 import { useGeolocationMap } from '@/composables/useGeolocationMap'
 import { useSignalementNotifications } from '@/composables/useSignalementNotificationsAdvanced'
 
@@ -158,7 +158,8 @@ const { latitude, longitude } = useGeolocationMap()
 const { 
   notifications, 
   unreadCount, 
-  initialize: initNotifications 
+  initialize: initNotifications,
+  sendLocalNotification
 } = useSignalementNotifications()
 
 // État
@@ -166,6 +167,7 @@ const signalements = ref<any[]>([])
 const userSignalements = ref<any[]>([])
 const isLoading = ref<boolean>(false)
 const errorMessage = ref<string>('')
+const FILTER_KEY = 'showOnlyMine'
 const showOnlyMine = ref<boolean>(false)
 const showNotifications = ref<boolean>(false)
 
@@ -297,6 +299,7 @@ const displaySignalements = () => {
  */
 const toggleMySignalements = () => {
   showOnlyMine.value = !showOnlyMine.value
+  try { localStorage.setItem(FILTER_KEY, String(showOnlyMine.value)) } catch {}
   displaySignalements()
 }
 
@@ -333,6 +336,40 @@ onMounted(async () => {
 
   // Initialiser les notifications
   await initNotifications()
+
+  // Restaurer le filtre depuis localStorage
+  try {
+    const raw = localStorage.getItem(FILTER_KEY)
+    if (raw !== null) showOnlyMine.value = raw === 'true'
+  } catch {}
+
+  // Initialiser FCM web token et l'enregistrer côté serveur (si VAPID key présente)
+  try {
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || ''
+    if (vapidKey && auth.currentUser) {
+      const token = await initMessaging(vapidKey)
+      if (token) {
+        await saveFcmToken(auth.currentUser.uid, token)
+      }
+    }
+  } catch (err) {
+    console.warn('FCM init/register failed:', err)
+  }
+  // Listen to foreground FCM messages and show local notification
+  try {
+    onForegroundMessageListener((payload: any) => {
+      const title = payload?.notification?.title || 'Mise à jour signalement'
+      const body = payload?.notification?.body || payload?.data?.message || ''
+      try { sendLocalNotification(title, body) } catch (e) { console.warn('sendLocalNotification failed', e) }
+    })
+  } catch (err) {
+    console.warn('Could not register foreground message listener:', err)
+  }
+})
+
+// Recharger les signalements lorsque l'utilisateur change (login/logout)
+onAuthStateChangeListener(async () => {
+  try { await loadSignalements() } catch (e) { console.warn('reload signalements after auth change failed', e) }
 })
 
 onBeforeUnmount(() => {

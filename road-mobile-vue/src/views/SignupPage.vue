@@ -65,32 +65,10 @@ const error = ref('');
 const successMessage = ref('');
 
 const signup = async () => {
-  error.value = '';
+  // Inscription in-app désactivée : utiliser le manager web
+  error.value = 'Inscription désactivée dans l\'application. Utilisez le manager web pour créer des comptes.';
   successMessage.value = '';
-
-  if (password.value !== confirmPassword.value) {
-    error.value = 'Les mots de passe ne correspondent pas';
-    return;
-  }
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email.value,
-      password.value
-    );
-
-    await updateProfile(userCredential.user, {
-      displayName: fullName.value,
-    });
-
-    successMessage.value = 'Inscription réussie ! Redirection en cours...';
-    setTimeout(() => {
-      router.push('/carte');
-    }, 2000);
-  } catch (err) {
-    error.value = err.message || 'Erreur lors de l\'inscription';
-  }
+  return;
 };
 </script>
 

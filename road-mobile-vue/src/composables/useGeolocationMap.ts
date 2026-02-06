@@ -51,9 +51,12 @@ export function useGeolocationMap() {
 
         return { latitude: latitude.value, longitude: longitude.value }
       } catch (fallbackErr: any) {
-        error.value = 'Impossible de récupérer votre position. Vérifiez vos paramètres de localisation.'
-        console.error('Erreur géolocalisation:', fallbackErr)
-        throw fallbackErr
+        // Géolocalisation refusée ou indisponible - utiliser position par défaut (Madagascar/Antananarivo)
+        console.warn('⚠️ Géolocalisation refusée ou indisponible. Utilisation de la position par défaut (Madagascar).')
+        latitude.value = -18.8792
+        longitude.value = 47.5079
+        error.value = 'Géolocalisation refusée. Position par défaut utilisée (Madagascar).'
+        return { latitude: latitude.value, longitude: longitude.value }
       }
     } finally {
       isLoading.value = false

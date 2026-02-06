@@ -85,6 +85,16 @@
            Réactiver ce compte
         </ion-button>
 
+        <ion-button
+          v-if="email"
+          expand="block"
+          color="primary"
+          @click="resetAttempts"
+          style="margin-top: 10px;"
+        >
+          Réinitialiser les tentatives
+        </ion-button>
+
         <div v-if="statusInfo" class="status-info" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: #f0f0f0;">
           <p style="margin: 5px 0;"><strong> Email:</strong> {{ statusInfo.email }}</p>
           <p style="margin: 5px 0;"><strong> Tentatives:</strong> {{ statusInfo.attempts }}/3</p>
@@ -235,6 +245,24 @@ const forceDisable = async (disable: boolean) => {
     }
   } catch (err: any) {
     error.value = 'Erreur mise à jour statut: ' + (err?.message || err)
+  } finally {
+    loading.value = false
+  }
+}
+
+const resetAttempts = async () => {
+  if (!email.value) {
+    error.value = 'Veuillez entrer un email d\'abord'
+    return
+  }
+
+  try {
+    loading.value = true
+    error.value = ''
+    await resetLoginAttempts(email.value)
+    statusInfo.value = { email: email.value, attempts: 0, disabled: false }
+  } catch (err: any) {
+    error.value = 'Erreur réinitialisation tentatives: ' + (err?.message || err)
   } finally {
     loading.value = false
   }

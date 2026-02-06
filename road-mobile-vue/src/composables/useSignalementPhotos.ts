@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export interface Photo {
   id: string
@@ -93,21 +92,31 @@ export function useSignalementPhotos() {
   }
 
   /**
-   * Uploader une photo vers Firebase Storage
+   * Uploader une photo vers Cloudinary (preset unsigned)
    */
   const uploadPhoto = async (photo: Photo, signalementId: string): Promise<string | null> => {
     try {
       uploadError.value = ''
-      const storage = getStorage()
 
-      // Chemin: /signalements/{signalementId}/{photoId}
-      const photoRef = storageRef(storage, `signalements/${signalementId}/${photo.id}.jpg`)
+      const CLOUDINARY_CLOUD_NAME = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME) || 'dfabawwvp'
+      const CLOUDINARY_UPLOAD_PRESET = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CLOUDINARY_UPLOAD_PRESET) || 'signalement'
+      const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`
 
-      // Uploader le fichier
-      const snapshot = await uploadBytes(photoRef, photo.blob)
+      const form = new FormData()
+      // append blob with a filename to help cloudinary
+      form.append('file', photo.blob, `${photo.id}.jpg`)
+      form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+      form.append('folder', `signalements/${signalementId}`)
 
-      // Récupérer l'URL de téléchargement
-      const downloadUrl = await getDownloadURL(snapshot.ref)
+      const res = await fetch(CLOUDINARY_API_URL, { method: 'POST', body: form })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Cloudinary upload failed: ${res.status} ${res.statusText} ${text}`)
+      }
+
+      const data = await res.json()
+      const downloadUrl = data.secure_url || data.url
+      if (!downloadUrl) throw new Error('Cloudinary did not return a URL')
 
       // Mettre à jour le statut de la photo
       const photoIndex = photos.value.findIndex((p) => p.id === photo.id)
@@ -116,10 +125,11 @@ export function useSignalementPhotos() {
         photos.value[photoIndex].isUploaded = true
       }
 
+      console.log('✅ Upload Cloudinary réussi:', downloadUrl)
       return downloadUrl
     } catch (error: any) {
-      console.error('Erreur upload photo:', error)
-      uploadError.value = `Erreur lors de l'upload: ${error.message}`
+      console.error('❌ Erreur upload photo vers Cloudinary:', error)
+      uploadError.value = `Erreur lors de l'upload: ${error.message || error}`
       return null
     }
   }
@@ -141,7 +151,7 @@ export function useSignalementPhotos() {
           uploadProgress.value[photo.id] = 0
           const url = await uploadPhoto(photo, signalementId)
           if (!url) {
-            throw new Error('Upload photo échoué. Vérifiez Firebase Storage et les règles.')
+            throw new Error('Upload photo échoué. Vérifiez la connexion et la configuration Cloudinary.')
           }
           uploadedUrls.push(url)
           uploadProgress.value[photo.id] = 100

@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, addDoc, serverTimestamp, GeoPoint, getDocs, doc, setDoc, getDoc, runTransaction, updateDoc, Timestamp, query, where } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, serverTimestamp, GeoPoint, getDocs, doc, setDoc, getDoc, runTransaction, updateDoc, Timestamp, query, where, connectFirestoreEmulator, deleteDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 /**
  * Interface pour suivre les tentatives de connexion
@@ -18,7 +19,7 @@ const firebaseConfig = {
   apiKey: 'AIzaSyDDJ5Qc64SZnwGCRBShtbyHLYaGBweAwdk',
   authDomain: 'cloud-auth-2b3af.firebaseapp.com',
   projectId: 'cloud-auth-2b3af',
-  storageBucket: 'cloud-auth-2b3af.firebasestorage.app',
+  storageBucket: 'cloud-auth-2b3af.appspot.com',
   messagingSenderId: '482327951103',
   appId: '1:482327951103:web:ef6b58ae5dcbfdd8083eca'
 };
@@ -26,9 +27,44 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+// Note: Firebase Storage usage removed in favour of Cloudinary uploads.
+// Messaging instance (for FCM web push)
+let messaging: ReturnType<typeof getMessaging> | null = null;
+// Maximum failed login attempts before blocking
+const MAX_FAILED_ATTEMPTS = 3;
 const FUNCTIONS_REGION = 'us-central1';
 const functions = getFunctions(app, FUNCTIONS_REGION);
 const FUNCTIONS_HTTP_BASE = `https://${FUNCTIONS_REGION}-${firebaseConfig.projectId}.cloudfunctions.net`;
+
+// Cloudinary configuration (can be overridden via Vite env vars)
+const CLOUDINARY_CLOUD_NAME = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME) || 'dfabawwvp';
+const CLOUDINARY_UPLOAD_PRESET = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CLOUDINARY_UPLOAD_PRESET) || 'signalement';
+const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+
+// Emulators: connect only when explicitly enabled via VITE_USE_FIREBASE_EMULATORS === 'true'
+const USE_FIREBASE_EMULATORS = typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_USE_FIREBASE_EMULATORS === 'true');
+if (USE_FIREBASE_EMULATORS) {
+  try {
+    // Firestore emulator (port from firebase.json)
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    console.log('⚙️ Connected to Firestore emulator at localhost:8080');
+  } catch (e) {
+    console.warn('Could not connect to Firestore emulator:', e);
+  }
+
+  try {
+    // Functions emulator
+    connectFunctionsEmulator(functions, 'localhost', 5001);
+    console.log('⚙️ Connected to Functions emulator at localhost:5001');
+  } catch (e) {
+    console.warn('Could not connect to Functions emulator:', e);
+  }
+
+  // Storage emulator disabled (Storage removed in favour of Cloudinary)
+} else {
+  // Ensure we don't attempt to contact local emulators in normal mode
+  console.log('ℹ️ Firebase emulators not enabled (VITE_USE_FIREBASE_EMULATORS != true). Using production Firebase services.');
+}
 
 /**
  * Interface pour un signalement
@@ -69,8 +105,13 @@ export async function createSignalement(data: Partial<Signalement>): Promise<str
         data.longitude || 0
       ),
       
-      // Référence au statut
-      id_statut: data.id_statut || null,
+      // Latitude et longitude séparées (pour compatibilité)
+      latitude: data.latitude || 0,
+      longitude: data.longitude || 0,
+      
+      // Référence au statut - défaut "EN_ATTENTE"
+      id_statut: data.id_statut || 'EN_ATTENTE',
+      statut: data.id_statut ? String(data.id_statut) : 'EN_ATTENTE', // Statut lisible
       
       is_dirty: data.is_dirty || false,
       updated_at: serverTimestamp(),
@@ -309,9 +350,10 @@ export async function updateSignalementStatut(
     const currentData = currentDoc.data();
     const ancienStatut = currentData?.id_statut || 'EN_ATTENTE';
     
-    // Mettre à jour le signalement
+    // Mettre à jour le signalement (mettre à jour id_statut et statut lisible)
     await updateDoc(signalementDocRef, {
       id_statut: nouveauStatut,
+      statut: String(nouveauStatut),
       updated_at: serverTimestamp()
     });
     
@@ -326,6 +368,13 @@ export async function updateSignalementStatut(
       userId: currentData?.id_utilisateur || ''
     });
     
+    // Créer également une notification dans la collection `notifications`
+    try {
+      await createStatusNotification(signalementId, currentData?.id_utilisateur || '', nouveauStatut);
+    } catch (notifErr) {
+      console.warn('⚠️ Impossible de créer la notification via createStatusNotification:', notifErr);
+    }
+
     console.log('✅ Statut mis à jour:', nouveauStatut);
   } catch (error) {
     console.error('❌ Erreur mise à jour statut:', error);
@@ -399,12 +448,177 @@ export async function getUserNotifications(userId: string): Promise<any[]> {
     throw error;
   }
 }
+/**
+ * Auth helpers
+ */
+export async function signIn(email: string, password: string) {
+  // Vérifier le statut (bloqué) avant tentative de connexion
+  try {
+    const status = await checkUserStatus(email);
+    if (status.disabled) {
+      const err = new Error('Compte bloqué après plusieurs tentatives. Contactez un administrateur.');
+      (err as any).code = 'auth/too-many-requests';
+      throw err;
+    }
+  } catch (checkErr) {
+    // Si la vérification échoue pour une raison réseau, on laisse la tentative de connexion se faire,
+    // mais on loggue l'erreur.
+    console.warn('checkUserStatus failed before signIn:', checkErr);
+  }
+
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    // Connexion réussie -> log debug info then réinitialiser les tentatives
+    try {
+      // Debug: afficher l'utilisateur courant et les claims du token
+      try {
+        const user = auth.currentUser;
+        console.log('Auth currentUser after signIn:', user ? { uid: user.uid, email: user.email } : null);
+        if (user && (user as any).getIdTokenResult) {
+          const idTokenResult = await (user as any).getIdTokenResult();
+          console.log('Auth idTokenResult.claims:', idTokenResult?.claims);
+        }
+      } catch (dbgErr) {
+        console.warn('Could not read idTokenResult after signIn:', dbgErr);
+      }
+
+      await resetLoginAttempts(email);
+    } catch (e) { console.warn('resetLoginAttempts failed:', e); }
+    return result;
+  } catch (err: any) {
+    // En cas d'échec, enregistrer une tentative
+    try { await registerFailedLogin(email); } catch (e) { console.warn('registerFailedLogin failed:', e); }
+    throw err;
+  }
+}
+
+export async function signOutUser() {
+  try {
+    const token = (() => { try { return localStorage.getItem('fcm_token'); } catch { return null; } })();
+    if (auth.currentUser && token) {
+      await removeFcmToken(auth.currentUser.uid, token);
+    }
+  } catch (err) {
+    console.warn('⚠️ Error removing FCM token at sign out:', err);
+  }
+
+  try {
+    await signOut(auth);
+  } finally {
+    try { localStorage.removeItem('fcm_token'); } catch {}
+  }
+}
+
+export function onAuthStateChangeListener(callback: (user: any) => void) {
+  return onAuthStateChanged(auth, callback);
+}
+
+/**
+ * Upload files to Cloudinary (unsigned preset) and attach URLs to a signalement
+ */
+export async function uploadFilesAndAttachToSignalement(signalementId: string, files: File[] | null): Promise<string[]> {
+  if (!files || files.length === 0) return [];
+  const uploadedUrls: string[] = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    // optional: organize uploads per signalement
+    form.append('folder', `signalements/${signalementId}`);
+
+    try {
+      const res = await fetch(CLOUDINARY_API_URL, {
+        method: 'POST',
+        body: form
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Cloudinary upload failed: ${res.status} ${res.statusText} ${text}`);
+      }
+
+      const data = await res.json();
+      const url = data.secure_url || data.url;
+      if (!url) throw new Error('Cloudinary did not return a URL');
+      uploadedUrls.push(url);
+      console.log('✅ Uploaded to Cloudinary:', url);
+    } catch (err) {
+      console.error('❌ Cloudinary upload error:', err);
+      // fail-fast: rethrow so caller can handle/report
+      throw err;
+    }
+  }
+
+  // Update Firestore records with the uploaded URLs
+  try {
+    await updateSignalementWithPhotos(signalementId, uploadedUrls);
+  } catch (e) {
+    console.warn('Erreur lors de la mise à jour du signalement avec les photos:', e);
+  }
+
+  return uploadedUrls;
+}
+
+/**
+ * Initialize Firebase Cloud Messaging and return the FCM token
+ */
+export async function initMessaging(vapidKey: string): Promise<string | null> {
+  try {
+    messaging = getMessaging(app as any);
+    const currentToken = await getToken(messaging, { vapidKey });
+    return currentToken || null;
+  } catch (err) {
+    console.warn('FCM initialization failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Sauvegarde un token FCM dans Firestore lié à l'utilisateur
+ */
+export async function saveFcmToken(userId: string, token: string): Promise<void> {
+  if (!userId || !token) return;
+  try {
+    const tokensRef = collection(db, 'fcm_tokens');
+    // document id combine userId + token fingerprint for idempotence
+    const docId = `${userId}__${token.substring(0, 24)}`;
+    await setDoc(doc(db, 'fcm_tokens', docId), {
+      userId,
+      token,
+      createdAt: serverTimestamp(),
+    }, { merge: true });
+    try { localStorage.setItem('fcm_token', token); } catch {}
+    console.log('✅ FCM token saved for', userId);
+  } catch (err) {
+    console.warn('⚠️ Could not save FCM token:', err);
+  }
+}
+
+/**
+ * Supprime le token FCM enregistré
+ */
+export async function removeFcmToken(userId: string, token: string): Promise<void> {
+  if (!userId || !token) return;
+  try {
+    const docId = `${userId}__${token.substring(0, 24)}`;
+    await deleteDoc(doc(db, 'fcm_tokens', docId));
+    console.log('✅ FCM token deleted for', userId);
+    try { localStorage.removeItem('fcm_token'); } catch {}
+  } catch (err) {
+    console.warn('⚠️ Could not remove FCM token:', err);
+  }
+}
+
+export function onForegroundMessageListener(callback: (payload: any) => void) {
+  if (!messaging) messaging = getMessaging(app as any);
+  return onMessage(messaging as any, (payload) => callback(payload));
+}
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-// Références aux Cloud Functions
-const disableUserFunction = httpsCallable(functions, 'disableUser');
-const enableUserFunction = httpsCallable(functions, 'enableUser');
-const checkStatusFunction = httpsCallable(functions, 'checkUserStatus');
+// Note: Cloud Functions disabled in this environment (no Blaze billing).
+// We manage block state via the `login_attempts` Firestore documents only.
 
 // Gestion locale des tentatives sans Firestore
 const attemptsKey = (email: string) => `login_attempts:${normalizeEmail(email)}`;
@@ -439,34 +653,33 @@ export async function registerFailedLogin(email: string): Promise<{ attempts: nu
       const currentAttempts = snap.exists() ? Number((snap.data() as LoginAttempt).attempts || 0) : 0;
       nextAttempts = currentAttempts + 1;
       isDisabled = nextAttempts >= MAX_FAILED_ATTEMPTS;
+      // Do NOT set `disabled: true` from the client side - Firestore rules forbid it.
+      // The client only records the number of attempts and timestamp. If the
+      // account needs to be disabled at Auth level, an admin/cloud-function
+      // should perform that using privileged credentials.
       const attemptData: LoginAttempt = {
         email: normalizedEmail,
         attempts: nextAttempts,
-        disabled: isDisabled,
-        lastAttempt: Timestamp.now(),
-        ...(isDisabled ? { blockedAt: Timestamp.now() } : {})
+        disabled: false,
+        lastAttempt: Timestamp.now()
       };
       transaction.set(attemptRef, attemptData, { merge: true });
     });
     console.log(`📝 Tentative ${nextAttempts} enregistrée dans Firestore pour ${email}`);
   } catch (firestoreError: any) {
-    console.error('❌ Erreur Firestore lors de l\'enregistrement:', firestoreError?.message || firestoreError);
-    // Fallback local si Firestore échoue
-    const current = getLocalAttempts(email);
-    nextAttempts = current + 1;
-    isDisabled = nextAttempts >= MAX_FAILED_ATTEMPTS;
-    setLocalAttempts(email, nextAttempts);
+    console.error('❌ Erreur Firestore lors de l\'enregistrement (no-local fallback):', firestoreError?.message || firestoreError);
+    // Ne pas utiliser localStorage en fallback — on évite d'écrire localement
+    // pour ne pas créer d'état bloquant hors ligne. Retourner sans incrémenter.
+    nextAttempts = 0;
+    isDisabled = false;
   }
 
-  // Désactiver réellement dans Firebase Authentication après 3 tentatives
-  if (isDisabled) {
-    try {
-      console.log(`🔒 Désactivation du compte Firebase pour ${email} (tentatives: ${nextAttempts})...`);
-      await callUpdateUserStatusHttp(email, true);
-    } catch (error: any) {
-      console.error('❌ Erreur Cloud Function désactivation (HTTP):', error?.message || error);
+    // If the number of attempts reached the threshold, the client records it
+    // but does NOT set `disabled=true`. An admin or a Cloud Function with
+    // Admin SDK privileges must perform the actual disable in Auth/Firestore.
+    if (isDisabled) {
+      console.warn(`User ${normalizedEmail} reached ${nextAttempts} attempts — admin action required to disable the account.`);
     }
-  }
 
   console.log(`🔒 Tentatives pour ${email}: ${nextAttempts}/${MAX_FAILED_ATTEMPTS}, Bloqué: ${isDisabled}`);
   return { attempts: nextAttempts, disabled: isDisabled };
@@ -487,20 +700,15 @@ export async function resetLoginAttempts(email: string): Promise<void> {
     }, { merge: true });
     console.log(`✅ Tentatives Firestore réinitialisées pour ${email}`);
   } catch (firestoreError: any) {
-    console.error('❌ Erreur Firestore lors de la réinitialisation:', firestoreError?.message || firestoreError);
+    console.error('❌ Erreur Firestore lors de la réinitialisation:', firestoreError?.code, firestoreError?.message, firestoreError);
     // Fallback local si Firestore échoue
     setLocalAttempts(email, 0);
   }
 
-  // Réactiver dans Firebase Authentication si désactivé
-  try {
-    console.log(`🔓 Réactivation du compte Firebase pour ${email}...`);
-    await callUpdateUserStatusHttp(email, false);
-  } catch (error: any) {
-    console.error('❌ Erreur Cloud Function réactivation (HTTP):', error?.message || error);
-  }
+  // Note: We do not call Admin APIs here. Resetting the Firestore `login_attempts`
+  // document is sufficient for client-side enforcement.
 
-  console.log(`✅ Tentatives réinitialisées pour ${email}`);
+  // Final status logged above (success or error). No duplicate log here.
 }
 
 /**
@@ -526,25 +734,24 @@ export async function checkUserStatus(email: string): Promise<{ disabled: boolea
       console.log(`📊 Données Firestore pour ${email}:`, { attempts, disabled });
     }
   } catch (firestoreError: any) {
-    console.warn('⚠️ Erreur lecture Firestore, utilisation localStorage:', firestoreError?.message);
-    attempts = getLocalAttempts(email);
+    console.warn('⚠️ Erreur lecture Firestore, ignorons les tentatives locales (client offline):', firestoreError?.message);
+    // Ne pas utiliser les valeurs locales (localStorage) pour bloquer l'utilisateur
+    // quand Firestore est inaccessible — sinon un état hors-ligne local peut
+    // empêcher la connexion même si le compte est actif côté Auth.
+    attempts = 0;
   }
 
-  // Vérifier le statut dans Firebase Authentication
+  // Return result based on Firestore only. Auth-level disabled status can't be
+  // checked here without server-side Admin privileges.
+  // attemptDoc may be undefined if the try block failed, so compute exists safely
   try {
-    const result = await checkStatusFunction({ email });
-    const data = result.data as { success: boolean; disabled: boolean };
-    const authDisabled = Boolean((data as any).disabled);
-    // Utiliser la valeur la plus restrictive (disabled = true si l'un des deux est vrai)
-    disabled = disabled || authDisabled;
-    console.log(`🔍 Statut complet de ${email}:`, { disabled, attempts, authDisabled });
-    return { disabled, attempts, exists: true };
-  } catch (error: any) {
-    // Si l'utilisateur n'existe pas côté Auth
-    if (error?.code === 'functions/not-found') {
-      return { disabled, attempts, exists: false };
-    }
-    console.error('❌ Erreur vérification statut Auth:', error?.message || error);
+    // If we reached here normally and attemptDoc exists in scope, use it.
+    // Otherwise fall back to false.
+    // Note: redeclare a local reference by re-reading the doc reference is cheap.
+    const checkRef = doc(db, 'login_attempts', normalizedEmail);
+    const checkDoc = await getDoc(checkRef);
+    return { disabled, attempts, exists: checkDoc.exists() };
+  } catch {
     return { disabled, attempts, exists: false };
   }
 }
@@ -559,9 +766,8 @@ export async function updateFirebaseUserStatus(email: string, disable: boolean):
   const normalizedEmail = normalizeEmail(email);
 
   try {
-    const authDisabled = await callUpdateUserStatusHttp(email, disable);
-
-    // Synchroniser dans Firestore
+    // Only update Firestore document to reflect the requested disabled state.
+    const authDisabled = Boolean(disable);
     const attempts = authDisabled ? MAX_FAILED_ATTEMPTS : 0;
     await setDoc(doc(db, 'login_attempts', normalizedEmail), {
       email: normalizedEmail,
@@ -578,22 +784,8 @@ export async function updateFirebaseUserStatus(email: string, disable: boolean):
   }
 }
 
-async function callUpdateUserStatusHttp(email: string, disable: boolean): Promise<boolean> {
-  const response = await fetch(`${FUNCTIONS_HTTP_BASE}/updateUserStatusHttp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, disable })
-  });
+// Cloud Functions HTTP helper removed — not used when operating without Blaze.
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(body || `HTTP ${response.status}`);
-  }
-
-  const payload = await response.json() as { disabled?: boolean };
-  return Boolean(payload?.disabled ?? disable);
-}
-
-export { auth, db };
+export { auth, db, functions };
 
 

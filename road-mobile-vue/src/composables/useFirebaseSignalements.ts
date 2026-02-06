@@ -1,8 +1,6 @@
 import { ref } from 'vue';
-import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
-import { auth } from '../firebase/firebase';
-
-const db = getFirestore();
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db, auth } from '../firebase/firebase';
 
 export function useFirebaseSignalements() {
   const signalements = ref<any[]>([]);
@@ -39,7 +37,7 @@ export function useFirebaseSignalements() {
     try {
       const q = query(
         collection(db, 'signalements'),
-        where('userId', '==', auth.currentUser.uid)
+        where('id_utilisateur', '==', auth.currentUser.uid)
       );
       const querySnapshot = await getDocs(q);
       mySignalements.value = querySnapshot.docs.map((doc) => ({

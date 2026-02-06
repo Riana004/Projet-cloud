@@ -1,6 +1,5 @@
 import { ref } from 'vue';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export interface Photo {
   id?: string;
@@ -14,7 +13,7 @@ export interface Photo {
  * Composable pour gérer les photos des signalements
  */
 export function useSignalementPhotos() {
-  const storage = getStorage();
+  // We now upload images to Cloudinary (unsigned preset). Firebase Storage removed.
   const photos = ref<Photo[]>([]);
   const isLoading = ref<boolean>(false);
   const error = ref<string>('');
@@ -106,10 +105,6 @@ export function useSignalementPhotos() {
 
     try {
       isLoading.value = true;
-      const timestamp = Date.now();
-      const fileName = `signalements/${signalementId}/${timestamp}.jpg`;
-      const fileRef = storageRef(storage, fileName);
-
       // Convertir base64 en Blob
       const byteCharacters = atob(photo.base64);
       const byteNumbers = new Array(byteCharacters.length);
@@ -119,11 +114,25 @@ export function useSignalementPhotos() {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      // Télécharger le fichier
-      await uploadBytes(fileRef, blob);
+      // Cloudinary upload (unsigned preset)
+      const CLOUDINARY_CLOUD_NAME = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME) || 'dfabawwvp'
+      const CLOUDINARY_UPLOAD_PRESET = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CLOUDINARY_UPLOAD_PRESET) || 'signalement'
+      const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`
 
-      // Récupérer l'URL de téléchargement
-      const downloadURL = await getDownloadURL(fileRef);
+      const form = new FormData()
+      form.append('file', blob, `signalement_${signalementId}_${Date.now()}.jpg`)
+      form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+      form.append('folder', `signalements/${signalementId}`)
+
+      const res = await fetch(CLOUDINARY_API_URL, { method: 'POST', body: form })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Cloudinary upload failed: ${res.status} ${res.statusText} ${text}`)
+      }
+
+      const data = await res.json()
+      const downloadURL = data.secure_url || data.url
+      if (!downloadURL) throw new Error('Cloudinary did not return a URL')
 
       return downloadURL;
     } catch (err: any) {
@@ -155,18 +164,11 @@ export function useSignalementPhotos() {
    * Supprime une photo de Firebase Storage
    */
   const deletePhotoFromStorage = async (photoUrl: string): Promise<boolean> => {
-    try {
-      isLoading.value = true;
-      const fileRef = storageRef(storage, photoUrl);
-      await deleteObject(fileRef);
-      return true;
-    } catch (err: any) {
-      error.value = `Erreur suppression photo: ${err.message}`;
-      console.error(error.value);
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
+    // Deleting files from Cloudinary requires server-side credentials.
+    // We cannot safely delete an uploaded image from the client using unsigned uploads.
+    console.warn('Client-side deletion not supported for Cloudinary unsigned uploads.');
+    error.value = 'Suppression non supportée côté client (voir le manager pour supprimer les images).';
+    return false;
   };
 
   /**
