@@ -37,10 +37,10 @@ public class Signalement {
     @Column(nullable = false)
     private Double longitude;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_statut")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private StatutSignalement statut;
+
 
     @Column(name = "is_dirty", nullable = false)
     private boolean isDirty;

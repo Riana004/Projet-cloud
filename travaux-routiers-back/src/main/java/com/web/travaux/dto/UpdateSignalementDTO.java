@@ -1,24 +1,23 @@
 package com.web.travaux.dto;
 
 import java.time.LocalDateTime;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class ReportDTO {
+public class UpdateSignalementDTO {
 
-    private Long id;
+    private String description;
     private Double latitude;
     private Double longitude;
-    private LocalDateTime date;
-    private String statut;
-    private Double pourcentage;
-    private Double surfaceM2;
+    private Double surface;
     private Double budget;
-    private String entreprise;
-    private String description;
-    // getters & setters
+    private String entrepriseConcerne;
+    private String statut;
+
+    private LocalDateTime dateModification; // 👈 date fournie
+
+    // getters / setters
 }

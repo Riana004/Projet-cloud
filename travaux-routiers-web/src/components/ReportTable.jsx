@@ -10,13 +10,16 @@ function Toast({ message, type, onClose }) {
       style={{ zIndex: 1055 }}
     >
       {message}
-      <button
-        className="btn-close ms-3"
-        onClick={onClose}
-      />
+      <button className="btn-close ms-3" onClick={onClose} />
     </div>
   );
 }
+
+// NEW → fonction pour date ISO
+const nowISO = () => {
+  const d = new Date();
+  return d.toISOString().slice(0, 16); // format datetime-local
+};
 
 export default function ReportTable({ reports, refresh }) {
   const [editedReports, setEditedReports] = useState({});
@@ -27,6 +30,7 @@ export default function ReportTable({ reports, refresh }) {
     setEditedReports(prev => ({
       ...prev,
       [id]: {
+        dateModification: prev[id]?.dateModification || nowISO(), // NEW
         ...prev[id],
         [field]: value
       }
@@ -46,7 +50,6 @@ export default function ReportTable({ reports, refresh }) {
         });
 
         refresh();
-
         setTimeout(() => setSavedRow(null), 1500);
       })
       .catch(() => {
@@ -88,6 +91,7 @@ export default function ReportTable({ reports, refresh }) {
                 <th>Surface</th>
                 <th>Budget</th>
                 <th>Entreprise</th>
+                <th>Date modif</th> {/* NEW */}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -148,6 +152,18 @@ export default function ReportTable({ reports, refresh }) {
                       />
                     </td>
 
+                    {/* NEW → champ date */}
+                    <td>
+                      <input
+                        type="datetime-local"
+                        value={edited.dateModification || nowISO()}
+                        className="form-control form-control-sm"
+                        onChange={e =>
+                          handleEdit(r.id, "dateModification", e.target.value)
+                        }
+                      />
+                    </td>
+
                     <td className="d-flex gap-1">
                       <button
                         className="btn btn-success btn-sm"
@@ -168,11 +184,13 @@ export default function ReportTable({ reports, refresh }) {
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() =>
-                          deleteReport(r.id)
-                            .then(() => {
-                              setToast({ message: "Signalement supprimé 🗑", type: "success" });
-                              refresh();
-                            })
+                          deleteReport(r.id).then(() => {
+                            setToast({
+                              message: "Signalement supprimé 🗑",
+                              type: "success"
+                            });
+                            refresh();
+                          })
                         }
                       >
                         🗑

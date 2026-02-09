@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.UserRecord;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.web.travaux.entity.User;
 
 import org.springframework.stereotype.Service;
 
@@ -23,6 +27,7 @@ import com.web.travaux.repository.StatutSignalementRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import com.web.travaux.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +35,9 @@ public class FirebaseSyncService {
     private final SignalementRepository signalementRepository;
     private final StatutSignalementRepository statutRepo;
      private final Firestore firestore; 
-    public void syncReports(List<ReportDTO> reports) {
+    private final UserRepository userRepository;
+
+     public void syncReports(List<ReportDTO> reports) {
         reports.forEach(r ->
             FirebaseDatabase.getInstance()
                 .getReference("reports")
@@ -164,7 +171,11 @@ public class FirebaseSyncService {
                 StatutSignalement statut = statutRepo.findByStatut(statutLabel != null ? statutLabel : "Nouveau");
                 s.setStatut(statut);
 
-                s.setUpdatedAt(ts.toSqlTimestamp());
+                if (ts != null) {
+                    s.setUpdatedAt(ts.toSqlTimestamp());
+                } else {
+                    s.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+                }
 
                 signalementRepository.save(s);
             }
@@ -173,6 +184,41 @@ public class FirebaseSyncService {
             throw new RuntimeException("Erreur sync Firebase → Postgres", e);
         }
     }
+
+    
+
+@Transactional
+public void syncUsersToFirebase() {
+
+    List<User> users = userRepository.findAll();
+
+    for (User u : users) {
+
+        try {
+
+            // Vérifie si déjà existant dans Firebase
+            try {
+                FirebaseAuth.getInstance().getUserByEmail(u.getEmail());
+                System.out.println("User déjà présent : " + u.getEmail());
+                continue;
+            } catch (FirebaseAuthException ignored) {
+                // pas trouvé → on le crée
+            }
+
+            UserRecord.CreateRequest request =
+                new UserRecord.CreateRequest()
+                    .setEmail(u.getEmail())
+                    .setPassword(u.getPassword());
+
+            FirebaseAuth.getInstance().createUser(request);
+
+            System.out.println("User envoyé vers Firebase : " + u.getEmail());
+
+        } catch (Exception e) {
+            System.err.println("Erreur user : " + u.getEmail());
+        }
+    }
+}
 
 
 

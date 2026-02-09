@@ -34,3 +34,8 @@ VALUES
 ('user2@example.com', 'Problème de plomberie dans la cuisine', NOW() - INTERVAL '2 days', -18.8800, 47.5085, 2, false, NOW(), 15.0, 800.0, 'Entreprise B'),
 ('user1@example.com', 'Éclairage défectueux dans le hall', NOW() - INTERVAL '5 days', -18.8820, 47.5090, 1, false, NOW(), 50.0, 1200.0, 'Entreprise C'),
 ('tech@example.com', 'Toit qui fuit après la pluie', NOW() - INTERVAL '1 days', -18.8830, 47.5100, 3, false, NOW(), 80.0, 5000.0, 'Entreprise D');
+
+UPDATE statut_signallement SET pourcentage = 0 WHERE id = 1;
+UPDATE statut_signallement SET pourcentage = 50 WHERE id = 2;
+UPDATE statut_signallement SET pourcentage = 100 WHERE id = 3;
+UPDATE statut_signallement SET pourcentage = 0 WHERE id = 4;
