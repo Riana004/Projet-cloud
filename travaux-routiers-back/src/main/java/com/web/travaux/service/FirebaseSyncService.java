@@ -20,10 +20,12 @@ import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.database.FirebaseDatabase;
 import com.web.travaux.dto.ReportDTO;
+import com.web.travaux.entity.Avancement;
 import com.web.travaux.entity.Signalement;
 import com.web.travaux.entity.StatutSignalement;
 import com.web.travaux.repository.SignalementRepository;
 import com.web.travaux.repository.StatutSignalementRepository;
+import com.web.travaux.repository.AvancementRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +38,7 @@ public class FirebaseSyncService {
     private final StatutSignalementRepository statutRepo;
      private final Firestore firestore; 
     private final UserRepository userRepository;
-
+    private final AvancementRepository avancementRepository;
      public void syncReports(List<ReportDTO> reports) {
         reports.forEach(r ->
             FirebaseDatabase.getInstance()
@@ -126,10 +128,19 @@ public class FirebaseSyncService {
                 String firebaseId = doc.getId();
 
                 // 🔍 Vérifier si le signalement existe déjà
-                Optional<Signalement> existing =
-                    signalementRepository.findByIdUtilisateur(firebaseId);
+               List<Signalement> existingList =
+                    signalementRepository.findAllByIdUtilisateur(firebaseId);
 
-                Signalement s = existing.orElseGet(Signalement::new);
+                Signalement s;
+
+                if (!existingList.isEmpty()) {
+                    s = existingList.get(0); // on prend le premier
+                    if (existingList.size() > 1) {
+                        System.out.println("⚠ Doublons détectés pour " + firebaseId);
+                    }
+                } else {
+                    s = new Signalement();
+                }
 
                 s.setIdUtilisateur(firebaseId);
                 s.setDescription(doc.getString("description"));
@@ -220,6 +231,126 @@ public void syncUsersToFirebase() {
     }
 }
 
+@Transactional
+public void syncAvancementFromFirebase() {
+    try {
+        ApiFuture<QuerySnapshot> future = firestore.collection("avancement").get();
+        List<QueryDocumentSnapshot> docs = future.get().getDocuments();
+
+        for (QueryDocumentSnapshot doc : docs) {
+
+            String avancementId = doc.getId();
+            Avancement a = new Avancement();
+
+            // ⚡ Signalement associé
+            String signalementFirebaseId = doc.getString("signalementId");
+            if (signalementFirebaseId == null) {
+                System.out.println("⚠ Avancement " + avancementId + " sans signalement, ignoré");
+                continue;
+            }
+            List<Signalement> signalements = signalementRepository.findAllByIdUtilisateur(signalementFirebaseId);
+            if (signalements.isEmpty()) {
+                System.out.println("⚠ Signalement Firebase " + signalementFirebaseId + " introuvable pour avancement " + avancementId);
+                continue;
+            }
+            a.setSignalement(signalements.get(0));
+
+            // 📌 Statuts
+            String ancienStatutLabel = doc.getString("ancien_statut_id");
+            if (ancienStatutLabel != null) {
+                a.setAncienStatut(statutRepo.findByStatut(ancienStatutLabel));
+            }
+
+            String nouveauStatutLabel = doc.getString("nouveau_statut_id");
+            if (nouveauStatutLabel != null) {
+                a.setNouveauStatut(statutRepo.findByStatut(nouveauStatutLabel));
+            } else {
+                System.out.println("⚠ Avancement " + avancementId + " sans nouveau statut, ignoré");
+                continue;
+            }
+
+            // 🕒 Date
+            com.google.cloud.Timestamp ts = doc.getTimestamp("date_modification");
+            if (ts != null) {
+                a.setDateModification(
+                    ts.toDate()
+                      .toInstant()
+                      .atZone(ZoneId.systemDefault())
+                      .toLocalDateTime()
+                );
+            } else {
+                a.setDateModification(LocalDateTime.now());
+            }
+
+            avancementRepository.save(a);
+        }
+
+        System.out.println("✅ Synchronisation des avancements terminée");
+    } catch (Exception e) {
+        throw new RuntimeException("Erreur sync Avancements Firebase → Postgres", e);
+    }
+}
+
+@Transactional
+public void syncAvancementToFirebase() {
+    try {
+        // Récupère tous les avancements depuis PostgreSQL
+        List<Avancement> avancements = avancementRepository.findAll();
+
+        for (Avancement a : avancements) {
+
+            // Vérifie que l'avancement a un signalement associé
+            if (a.getSignalement() == null || a.getSignalement().getIdUtilisateur() == null) {
+                System.out.println("⚠ Avancement " + a.getId() + " sans signalement, ignoré");
+                continue;
+            }
+
+            Map<String, Object> data = new HashMap<>();
+
+            // Signalement lié
+            data.put("signalementId", a.getSignalement().getIdUtilisateur());
+
+            // Statuts
+            if (a.getAncienStatut() != null) {
+                data.put("ancien_statut_id", a.getAncienStatut().getStatut());
+            }
+            if (a.getNouveauStatut() != null) {
+                data.put("nouveau_statut_id", a.getNouveauStatut().getStatut());
+            }
+
+            // Date modification
+            if (a.getDateModification() != null) {
+                data.put(
+                    "date_modification",
+                    com.google.cloud.Timestamp.of(
+                        java.util.Date.from(
+                            a.getDateModification()
+                             .atZone(ZoneId.systemDefault())
+                             .toInstant()
+                        )
+                    )
+                );
+            } else {
+                data.put(
+                    "date_modification",
+                    com.google.cloud.Timestamp.now()
+                );
+            }
+
+            // 🔄 Upsert vers Firebase (document par id PostgreSQL)
+            firestore
+                .collection("avancement")
+                .document(a.getId().toString())
+                .set(data);
+
+            System.out.println("Avancement " + a.getId() + " synchronisé vers Firebase");
+        }
+
+        System.out.println("✅ Tous les avancements ont été synchronisés vers Firebase");
+    } catch (Exception e) {
+        throw new RuntimeException("Erreur sync Avancements PostgreSQL → Firebase", e);
+    }
+}
 
 
 }

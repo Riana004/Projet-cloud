@@ -9,8 +9,10 @@ import com.web.travaux.entity.Signalement;
 import com.web.travaux.entity.StatutSignalement;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface SignalementRepository extends JpaRepository<Signalement, Long> {
-    Optional<Signalement> findByIdUtilisateur(String utilisateurId);
+    List<Signalement> findAllByIdUtilisateur(String idUtilisateur);
+
 }

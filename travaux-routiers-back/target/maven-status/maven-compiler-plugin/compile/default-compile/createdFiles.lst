@@ -6,10 +6,12 @@ com/web/travaux/dto/LoginRequest.class
 com/web/travaux/entity/StatutSignalement$StatutSignalementBuilder.class
 com/web/travaux/dto/StatsEntrepriseDto.class
 com/web/travaux/dto/SignalementResponse.class
+com/web/travaux/dto/SignalementTooltipDTO$SignalementTooltipDTOBuilder.class
 com/web/travaux/controller/AuthController.class
 com/web/travaux/controller/StatistiqueController.class
 com/web/travaux/dto/SignalementSummaryResponse.class
 com/web/travaux/config/SecurityConfig.class
+com/web/travaux/service/FirestorePhotoService.class
 com/web/travaux/repository/AvancementRepository.class
 com/web/travaux/dto/StatsGlobalDto.class
 com/web/travaux/entity/User.class
@@ -36,6 +38,7 @@ com/web/travaux/dto/LoginResponse.class
 com/web/travaux/entity/Photo.class
 com/web/travaux/repository/PhotoRepository.class
 com/web/travaux/controller/ReportController.class
+com/web/travaux/dto/SignalementTooltipDTO.class
 com/web/travaux/repository/SignalementRepository.class
 com/web/travaux/controller/SignalementController.class
 com/web/travaux/service/FirebaseAuthService.class

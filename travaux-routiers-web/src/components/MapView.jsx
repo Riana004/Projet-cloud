@@ -56,7 +56,7 @@ export default function MapView({ reports }) {
     if (photosByReport[id]) return;
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/signalements/${id}/photos`);
+      const res = await fetch(`${apiBaseUrl}/api/signalements/${id}/photo`);
       if (!res.ok) throw new Error("Erreur photos");
 
       const data = await res.json();
