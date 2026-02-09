@@ -25,7 +25,7 @@ public class Signalement {
     @Column(name = "id_utilisateur", nullable = false, length = 255)
     private String idUtilisateur;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "date_signalement", nullable = false)
