@@ -2,6 +2,7 @@ package com.web.travaux.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDateTime;
 @Getter
 @Setter
 public class UpdateReportDTO {
@@ -9,4 +10,6 @@ public class UpdateReportDTO {
     private Double surfaceM2;
     private Double budget;
     private String entreprise;
+    private LocalDateTime dateModification;
+
 }
