@@ -83,6 +83,45 @@ export function useSignalementNotificationsAdvanced() {
   // additional unsubscribes for signalement-based queries
   let extraUnsubscribes: Array<() => void> = [];
   const lastStatuses: Record<string, any> = {};
+  
+  // Declare refreshFromServer as a reassignable function
+  let refreshFromServer: () => Promise<any> = async () => {
+    return { ok: false, error: 'not initialized' };
+  };
+
+  /**
+   * Helper function to rebuild notifications from the global map
+   */
+  const rebuildNotifications = (notifMap: Map<string, any>, currentUid: string) => {
+    console.debug('[notif] rebuildNotifications — notifMap size=', notifMap.size);
+    const arr = Array.from(notifMap.values()).map(d => ({ id: d.id, data: d.data }));
+    // normalize and sort by timestamp desc
+    const normalized = arr.map(item => {
+      const d = item.data;
+      const ancienId = d.ancien_statut_id || d.ancienStatut || d.ancien || null;
+      const nouveauId = d.nouveau_statut_id || d.nouveauStatut || d.nouveau || d.statut || null;
+      const statutLabel = nouveauId ? getStatusLabel(nouveauId) : (d.statut || d.status || '');
+      return {
+        id: item.id,
+        signalementId: d.signalementId || d.signalement_id || d.signalement || null,
+        id_avancement: d.id_avancement || d.avancementId || d.avancement || null,
+        userId: d.userId || d.user_id || d.uid || currentUid,
+        ancienStatutId: ancienId,
+        nouveauStatutId: nouveauId,
+        statut: statutLabel,
+        message: d.message || statutLabel || '',
+        timestamp: d.timestamp || d.dateChangement || Timestamp.now(),
+        isRead: d.isRead ?? d.is_read ?? false,
+      } as SignalementNotification;
+    });
+    normalized.sort((a, b) => {
+      const ta = (a.timestamp && (a.timestamp as any).toMillis) ? (a.timestamp as any).toMillis() : 0;
+      const tb = (b.timestamp && (b.timestamp as any).toMillis) ? (b.timestamp as any).toMillis() : 0;
+      return tb - ta;
+    });
+    notifications.value = normalized;
+    unreadCount.value = notifications.value.filter(n => !n.isRead).length;
+  };
 
   /**
    * Demande la permission pour les notifications
@@ -160,10 +199,6 @@ export function useSignalementNotificationsAdvanced() {
             sound: 'default',
             smallIcon: 'ic_notification',
             largeIcon: 'assets/icon/favicon.png',
-            data: {
-              signalementId,
-              url: `/signalement/${signalementId}`,
-            },
           },
         ],
       });
@@ -218,36 +253,9 @@ export function useSignalementNotificationsAdvanced() {
 
       let pendingInitial = 1; // number of initial snapshots to wait for (qUser + extra queries)
 
-      const rebuildNotifications = () => {
-        console.debug('[notif] rebuildNotifications — notifMap size=', notifMap.size);
-        const arr = Array.from(notifMap.values()).map(d => ({ id: d.id, data: d.data }));
-        // normalize and sort by timestamp desc
-        const normalized = arr.map(item => {
-          const d = item.data;
-          const ancienId = d.ancien_statut_id || d.ancienStatut || d.ancien || null;
-          const nouveauId = d.nouveau_statut_id || d.nouveauStatut || d.nouveau || d.statut || null;
-          const statutLabel = nouveauId ? getStatusLabel(nouveauId) : (d.statut || d.status || '');
-          return {
-            id: item.id,
-            signalementId: d.signalementId || d.signalement_id || d.signalement || null,
-            id_avancement: d.id_avancement || d.avancementId || d.avancement || null,
-            userId: d.userId || d.user_id || d.uid || currentUid,
-            ancienStatutId: ancienId,
-            nouveauStatutId: nouveauId,
-            statut: statutLabel,
-            message: d.message || statutLabel || '',
-            timestamp: d.timestamp || d.dateChangement || Timestamp.now(),
-            isRead: d.isRead ?? d.is_read ?? false,
-          } as SignalementNotification;
-        });
-        normalized.sort((a, b) => {
-          const ta = (a.timestamp && (a.timestamp as any).toMillis) ? (a.timestamp as any).toMillis() : 0;
-          const tb = (b.timestamp && (b.timestamp as any).toMillis) ? (b.timestamp as any).toMillis() : 0;
-          return tb - ta;
-        });
-        notifications.value = normalized;
-        unreadCount.value = notifications.value.filter(n => !n.isRead).length;
-      };
+      // Use the composable-level rebuildNotifications function
+      const rebuildNotifs = () => rebuildNotifications(notifMap, currentUid);
+      
       try { (window as any).__refreshNotifications = refreshFromServer; } catch (e) { /* ignore */ }
 
       // Helper: ensure we include any docs that may have been missed by listeners
@@ -274,7 +282,7 @@ export function useSignalementNotificationsAdvanced() {
             // ignore per-signalement fetch errors
           }
 
-          rebuildNotifications();
+          rebuildNotifs();
           console.debug('[notif] ensureInitialDocs completed');
         } catch (e) {
           // ignore errors from fallback fetch
@@ -294,7 +302,7 @@ export function useSignalementNotificationsAdvanced() {
           }
         });
         pendingInitial = Math.max(0, pendingInitial - 1);
-        rebuildNotifications();
+        rebuildNotifs();
       }, (err) => {
         console.error('Erreur écoute notifications (user):', err);
       });
@@ -306,7 +314,7 @@ export function useSignalementNotificationsAdvanced() {
       try {
         (window as any).__notifMap = notifMap;
         (window as any).__getNotifications = () => notifications.value;
-        (window as any).__rebuildNotifications = rebuildNotifications;
+        (window as any).__rebuildNotifications = rebuildNotifs;
         // Bridge API: make core helpers available even when component didn't set __notifApi
         try {
           (window as any).__notifApi = (window as any).__notifApi || {
@@ -343,7 +351,7 @@ export function useSignalementNotificationsAdvanced() {
             }
           });
           pendingInitial = Math.max(0, pendingInitial - 1);
-          rebuildNotifications();
+          rebuildNotifs();
         }, (err) => {
           console.error('Erreur écoute notifications (signalement batch):', err);
         });
@@ -376,7 +384,7 @@ export function useSignalementNotificationsAdvanced() {
               console.warn('Could not mark notification read for', id, e);
             }
           }
-          rebuildNotifications();
+          rebuildNotifs();
         }
       } catch (e) {
         console.warn('marking old notifications failed:', e);
@@ -390,7 +398,7 @@ export function useSignalementNotificationsAdvanced() {
           const fetched = await getUserNotifications(currentUid).catch(() => []);
           if (fetched && fetched.length > 0) {
             fetched.forEach((d: any) => notifMap.set(d.id, { id: d.id, data: d }));
-            rebuildNotifications();
+            rebuildNotifs();
             console.log('Fallback: merged', fetched.length, 'notifications from getUserNotifications');
           }
         }
@@ -399,12 +407,12 @@ export function useSignalementNotificationsAdvanced() {
       }
 
       // Expose a helper to force-refresh notifications directly from server
-      const refreshFromServer = async () => {
+      refreshFromServer = async () => {
         try {
           const fetched = await getUserNotifications(currentUid).catch(() => []);
           if (fetched && fetched.length > 0) {
             fetched.forEach((d: any) => notifMap.set(d.id, { id: d.id, data: d }));
-            rebuildNotifications();
+            rebuildNotifs();
             console.debug('[notif] refreshFromServer merged', fetched.length, 'docs');
             return { ok: true, count: fetched.length };
           }
@@ -515,7 +523,7 @@ export function useSignalementNotificationsAdvanced() {
       // update user's lastNotificationSeen
       try { await setDoc(doc(db, 'users', uid), { lastNotificationSeen: serverTimestamp() }, { merge: true }); } catch (e) { console.warn('Could not set lastNotificationSeen:', e); }
       // refresh local view
-      rebuildNotifications();
+      rebuildNotifications(__globalNotifMap, uid);
       return { ok: true };
     } catch (e) {
       console.error('markAllAsRead failed:', e);

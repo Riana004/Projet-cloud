@@ -52,7 +52,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
-import signalementApi from '../api/signalement.api'
+import { signalementApi } from '../api/signalement.api'
 import { API_CONFIG } from '../config'
 
 const router = useRouter()

@@ -260,7 +260,7 @@ const loadSignalements = async () => {
 const displaySignalements = () => {
   // Nettoyer les anciens marqueurs
   markers.value.forEach(marker => {
-    if (map) map.removeLayer(marker)
+    if (map) map.removeLayer(marker as any)
   })
   markers.value.clear()
 

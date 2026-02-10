@@ -36,6 +36,14 @@
                 </ion-col>
               </ion-row>
               <ion-row>
+                <ion-col size="6">
+                  <strong>Prix par m²:</strong><br>{{ signalement.prix_par_m2 ? signalement.prix_par_m2 + ' €' : 'Non spécifié' }}
+                </ion-col>
+                <ion-col size="6">
+                  <strong>Niveau:</strong><br>{{ signalement.niveau }}
+                </ion-col>
+              </ion-row>
+              <ion-row>
                 <ion-col size="12">
                   <strong>Entreprise concernée:</strong><br>{{ signalement.entreprise_concerne || 'Non spécifiée' }}
                 </ion-col>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">road-mobile-vue</string>
+    <string name="title_activity_main">road-mobile-vue</string>
+    <string name="package_name">com.mobile.roadmobile</string>
+    <string name="custom_url_scheme">com.mobile.roadmobile</string>
+</resources>

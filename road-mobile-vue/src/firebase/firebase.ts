@@ -3,6 +3,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from
 import { getFirestore, initializeFirestore, collection, addDoc, serverTimestamp, GeoPoint, getDocs, doc, setDoc, getDoc, runTransaction, updateDoc, Timestamp, query, where, connectFirestoreEmulator, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { API_CONFIG } from '@/config';
 
 /**
  * Interface pour suivre les tentatives de connexion
@@ -26,6 +27,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const functions = getFunctions(app);
 
 // Emulators: connect only when explicitly enabled via VITE_USE_FIREBASE_EMULATORS === 'true'
 const USE_FIREBASE_EMULATORS = typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.VITE_USE_FIREBASE_EMULATORS === 'true');
@@ -80,6 +82,8 @@ export interface Signalement {
   surface: number;
   budget: number;
   entreprise_concerne: string;
+  prix_par_m2?: number;
+  niveau?: number;
 }
 
 /**
@@ -119,7 +123,9 @@ export async function createSignalement(data: Partial<Signalement>): Promise<str
       // Conversion explicite en nombre
       surface: parseFloat(String(data.surface || 0)),
       budget: parseFloat(String(data.budget || 0)),
-      entreprise_concerne: data.entreprise_concerne || ''
+      entreprise_concerne: data.entreprise_concerne || '',
+      prix_par_m2: data.prix_par_m2 ? parseFloat(String(data.prix_par_m2)) : null,
+      niveau: data.niveau !== undefined && data.niveau !== null ? parseInt(String(data.niveau), 10) : 0
     };
 
     // Envoi à Firestore
@@ -439,10 +445,10 @@ export function getStatusLabel(statusKey: any): string {
       return statutSignalementMap[key];
     }
     const labels: Record<string, string> = {
-      'NOUVEAU': 'Nouveau',
-      'EN_COURS': 'En cours',
-      'RESOLU': 'Résolu',
-      'REJETE': 'Rejeté'
+      'Nouveau': 'Nouveau',
+      'En cours': 'En cours',
+      'Resolu': 'Resolu',
+      'Rejete': 'Rejete'
     };
     return labels[key] || key;
   } catch {
@@ -1390,7 +1396,7 @@ export async function registerFailedLogin(email: string): Promise<{ attempts: nu
 
   try {
     // Appeler le backend qui gère todo : Firebase Auth + Firestore logs
-    const response = await fetch('http://localhost:3000/api/auth/register-failed-login', {
+    const response = await fetch(`${API_CONFIG.FIREBASE_ADMIN_URL}/api/auth/register-failed-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -1419,7 +1425,7 @@ export async function resetLoginAttempts(email: string): Promise<void> {
   if (!email) return;
 
   try {
-    const response = await fetch('http://localhost:3000/api/auth/reset-attempts', {
+    const response = await fetch(`${API_CONFIG.FIREBASE_ADMIN_URL}/api/auth/reset-attempts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -1446,7 +1452,7 @@ export async function checkUserStatus(email: string): Promise<{ disabled: boolea
   if (!email) return { disabled: false, attempts: 0, exists: false };
 
   try {
-    const response = await fetch(`http://localhost:3000/api/auth/check-status?email=${encodeURIComponent(email)}`);
+    const response = await fetch(`${API_CONFIG.FIREBASE_ADMIN_URL}/api/auth/check-status?email=${encodeURIComponent(email)}`);
     
     if (!response.ok) {
       console.warn('⚠️ Backend error');
@@ -1474,7 +1480,7 @@ export async function updateFirebaseUserStatus(email: string, disable: boolean):
   if (!email) return { disabled: false, attempts: 0 };
 
   try {
-    const response = await fetch('http://localhost:3000/api/auth/update-user-status', {
+    const response = await fetch(`${API_CONFIG.FIREBASE_ADMIN_URL}/api/auth/update-user-status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, disable })
