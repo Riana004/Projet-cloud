@@ -69,7 +69,7 @@ public ResponseEntity<Signalement> updateSignalement(
         signalement.setPrix_par_m2(dto.getPrixParM2());
 
         // 🔹 Vérification avant modification du niveau
-        if (ancienStatut != null && "Nouveau".equalsIgnoreCase(ancienStatut.getStatut())) {
+        if (ancienStatut != null && "En cours".equalsIgnoreCase(ancienStatut.getStatut())) {
             signalement.setNiveau(dto.getNiveau());
         } else if (dto.getNiveau() != signalement.getNiveau()) {
             throw new RuntimeException("Impossible de modifier le niveau sauf si le statut est 'Nouveau'");
