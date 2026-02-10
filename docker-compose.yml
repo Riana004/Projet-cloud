@@ -1,7 +1,7 @@
 name: travaux
 services:
   db:
-    image: postgres:latest
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password

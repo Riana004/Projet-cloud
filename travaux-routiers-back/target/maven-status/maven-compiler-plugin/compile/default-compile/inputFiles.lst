@@ -14,6 +14,7 @@
 /app/src/main/java/com/web/travaux/dto/ReportDTO.java
 /app/src/main/java/com/web/travaux/dto/SignalementResponse.java
 /app/src/main/java/com/web/travaux/dto/SignalementSummaryResponse.java
+/app/src/main/java/com/web/travaux/dto/SignalementTooltipDTO.java
 /app/src/main/java/com/web/travaux/dto/StatsEntrepriseDto.java
 /app/src/main/java/com/web/travaux/dto/StatsGlobalDto.java
 /app/src/main/java/com/web/travaux/dto/UpdateReportDTO.java
@@ -33,6 +34,7 @@
 /app/src/main/java/com/web/travaux/repository/UserRepository.java
 /app/src/main/java/com/web/travaux/service/FirebaseAuthService.java
 /app/src/main/java/com/web/travaux/service/FirebaseSyncService.java
+/app/src/main/java/com/web/travaux/service/FirestorePhotoService.java
 /app/src/main/java/com/web/travaux/service/PhotoService.java
 /app/src/main/java/com/web/travaux/service/ReportService.java
 /app/src/main/java/com/web/travaux/service/StatistiqueService.java
