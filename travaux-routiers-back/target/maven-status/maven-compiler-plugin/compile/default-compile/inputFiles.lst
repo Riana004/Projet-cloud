@@ -14,6 +14,7 @@
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/ReportDTO.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/SignalementResponse.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/SignalementSummaryResponse.java
+/home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/SignalementTooltipDTO.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/StatsEntrepriseDto.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/StatsGlobalDto.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/dto/UpdateReportDTO.java
@@ -33,6 +34,7 @@
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/repository/UserRepository.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/service/FirebaseAuthService.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/service/FirebaseSyncService.java
+/home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/service/FirestorePhotoService.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/service/PhotoService.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/service/PhotoServiceImpl.java
 /home/itu/Documents/GitHub/Projet-cloud/travaux-routiers-back/src/main/java/com/web/travaux/service/ReportService.java

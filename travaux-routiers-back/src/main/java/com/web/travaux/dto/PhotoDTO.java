@@ -1,16 +1,18 @@
 package com.web.travaux.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import com.google.cloud.Timestamp;
+import lombok.*;
 
-import java.sql.Timestamp;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class PhotoDTO {
 
-    private Long id;
+    private String id;
     private String url;
+    private String signalementId;
     private boolean isDirty;
     private Timestamp updatedAt;
 }
