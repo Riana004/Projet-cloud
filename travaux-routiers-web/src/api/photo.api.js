@@ -6,7 +6,7 @@ const SIGNAL_API = "http://localhost:8081/api/signalements"; // 👈 nouveau
 
 // récupérer les photos d’un signalement
 export const fetchReportPhotos = (signalementId) =>
-  axios.get(`${SIGNAL_API}/${signalementId}/photos`);
+  axios.get(`${SIGNAL_API}/${signalementId}/photo`);
 
 
 // upload photo (si tu as un endpoint POST)

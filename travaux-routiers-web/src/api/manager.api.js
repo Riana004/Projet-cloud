@@ -22,5 +22,7 @@ export const fetchBlockedUsers = () =>
 export const unlockUser = (id) =>
   axios.patch(`${AUTH_API}/unlock/${id}`);
 
+
 export const fetchDashboardStats = () =>
   axios.get(`${STATS_API}/dashboard`);
+

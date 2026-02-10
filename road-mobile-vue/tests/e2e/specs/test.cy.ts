@@ -1,6 +1,7 @@
 describe('My First Test', () => {
-  it('Visits the app root url', () => {
+  it('Visits the app root url and shows login page', () => {
     cy.visit('/')
-    cy.contains('ion-content', 'Tab 1 page')
+    // Root redirects to /login; check for the login title
+    cy.contains('ion-title', 'Connexion')
   })
 })

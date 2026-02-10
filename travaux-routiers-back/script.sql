@@ -34,13 +34,31 @@ CREATE TABLE signalement (
     date_signalement TIMESTAMP NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    id_statut BIGINT,
+    id_status_signalement BIGINT,
     is_dirty BOOLEAN NOT NULL DEFAULT false,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     surface DOUBLE PRECISION NOT NULL,
     budget DOUBLE PRECISION NOT NULL,
     entreprise_concerne VARCHAR(255) NOT NULL,
     
-    CONSTRAINT fk_signalement_statut FOREIGN KEY (id_statut) 
+    CONSTRAINT fk_signalement_status FOREIGN KEY (id_status_signalement) 
+        REFERENCES statut_signallement(id) ON DELETE SET NULL
+);
+
+-- Table: AVANCEMENT (historique des changements de statut)
+CREATE TABLE avancement (
+    id BIGSERIAL PRIMARY KEY,
+    signalement_id BIGINT NOT NULL,
+    ancien_statut_id BIGINT,
+    nouveau_statut_id BIGINT,
+    date_modification TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_dirty BOOLEAN NOT NULL DEFAULT false,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_avancement_signalement FOREIGN KEY (signalement_id)
+        REFERENCES signalement(id) ON DELETE CASCADE,
+    CONSTRAINT fk_avancement_ancien_statut FOREIGN KEY (ancien_statut_id)
+        REFERENCES statut_signallement(id) ON DELETE SET NULL,
+    CONSTRAINT fk_avancement_nouveau_statut FOREIGN KEY (nouveau_statut_id)
         REFERENCES statut_signallement(id) ON DELETE SET NULL
 );

@@ -53,6 +53,7 @@ public ResponseEntity<String> syncFirebase() {
 public ResponseEntity<String> syncLocal() {
     firebaseSyncService.syncFromPostgresToFirebase();
     firebaseSyncService.syncUsersToFirebase();
+    firebaseSyncService.syncAvancementToFirebase();
     return ResponseEntity.ok("Synchronisation Firebase ⇄ PostgreSQL réussie");
 }
 

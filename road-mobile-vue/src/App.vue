@@ -1,9 +1,11 @@
 <template>
-  <ion-app>
-    <ion-router-outlet />
-  </ion-app>
+  <router-view />
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet } from '@ionic/vue';
+// App component - router manages all navigation
 </script>
+
+<style>
+/* Add your styles here */
+</style>

@@ -1,94 +1,382 @@
 <template>
   <ion-page>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Connexion</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
     <ion-content class="ion-padding">
+      <div class="login-container">
+        <h1> Signalements Routiers</h1>
+        
+        <form @submit.prevent="login">
+          <ion-item>
+            <ion-label position="floating">Email</ion-label>
+            <ion-input
+              v-model="email"
+              type="email"
+              placeholder="votre.email@example.com"
+              required
+            ></ion-input>
+          </ion-item>
 
-      <ion-input
-        :value="email"
-        @ionInput="email = $event.target.value"
-        type="email"
-        placeholder="Email"
-        fill="outline"
-        label="Email"
-        label-placement="floating"
-      />
+          <ion-item>
+            <ion-label position="floating">Mot de passe</ion-label>
+            <ion-input
+              v-model="password"
+              type="password"
+              placeholder="Votre mot de passe"
+              required
+            ></ion-input>
+          </ion-item>
 
-      <ion-input
-        :value="password"
-        @ionInput="password = $event.target.value"
-        type="password"
-        placeholder="Mot de passe"
-        fill="outline"
-        label="Mot de passe"
-        label-placement="floating"
-        style="margin-top: 16px"
-      />
+          <ion-button expand="block" type="submit" :disabled="loading" class="login-btn">
+            <span v-if="!loading">Se connecter</span>
+            <span v-else>Chargement...</span>
+          </ion-button>
+        </form>
 
-      <ion-button expand="block" @click="login" style="margin-top: 20px">
-        Se connecter
-      </ion-button>
+        <div v-if="error" class="error-message">
+          <p style="color: red;">{{ error }}</p>
+        </div>
 
-      <p v-if="errorMessage" style="color: red; margin-top: 10px">
-        {{ errorMessage }}
-      </p>
+        <div class="separator">
+          <p>ou</p>
+        </div>
 
+        <ion-button expand="block" fill="outline" @click="goToSignup">
+          Créer un compte
+        </ion-button>
+
+        <ion-button expand="block" fill="clear" @click="loginAsVisitor">
+          Continuer en tant que visiteur
+        </ion-button>
+
+        <!-- Bouton de test pour vérifier le statut -->
+        <ion-button 
+          v-if="email" 
+          expand="block" 
+          fill="outline" 
+          color="warning" 
+          @click="checkStatus"
+          style="margin-top: 20px;"
+        >
+          🔍 Vérifier le statut de ce compte
+        </ion-button>
+
+        <ion-button
+          v-if="email"
+          expand="block"
+          color="danger"
+          @click="forceDisable(true)"
+          style="margin-top: 10px;"
+        >
+           Désactiver ce compte
+        </ion-button>
+
+        <ion-button
+          v-if="email"
+          expand="block"
+          color="success"
+          @click="forceDisable(false)"
+          style="margin-top: 10px;"
+        >
+           Réactiver ce compte
+        </ion-button>
+
+        <ion-button
+          v-if="email"
+          expand="block"
+          color="primary"
+          @click="resetAttempts"
+          style="margin-top: 10px;"
+        >
+          Réinitialiser les tentatives
+        </ion-button>
+
+        <div v-if="statusInfo" class="status-info" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: #f0f0f0;">
+          <p style="margin: 5px 0;"><strong> Email:</strong> {{ statusInfo.email }}</p>
+          <p style="margin: 5px 0;"><strong> Tentatives:</strong> {{ statusInfo.attempts }}/3</p>
+          <p style="margin: 5px 0;"><strong> Statut:</strong> 
+            <span :style="{ color: statusInfo.disabled ? 'red' : 'green', fontWeight: 'bold' }">
+              {{ statusInfo.disabled ? ' BLOQUÉ' : ' ACTIF' }}
+            </span>
+          </p>
+        </div>
+      </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '@/firebase/firebase'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import type { FirebaseError } from 'firebase/app'
-import { IonPage, IonContent, IonInput, IonButton } from '@ionic/vue'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonItem, IonLabel, IonInput, IonButton
+} from '@ionic/vue'
+import { auth } from '@/firebase/firebase'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { 
+  checkUserStatus, 
+  registerFailedLogin, 
+  resetLoginAttempts, 
+  updateUserStatus 
+} from '@/api/auth.api'
 
+const router = useRouter()
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
-const router = useRouter()
+const error = ref('')
+const loading = ref(false)
+const statusInfo = ref<any>(null)
+
+const MAX_ATTEMPTS = 3
+
+// Auto-refresh du statut toutes les 5 secondes
+let statusRefreshInterval: any = null
+
+const autoRefreshStatus = async () => {
+  if (!email.value) {
+    if (statusRefreshInterval) {
+      clearInterval(statusRefreshInterval)
+      statusRefreshInterval = null
+    }
+    return
+  }
+
+  // Auto-check toutes les 5 secondes
+  statusRefreshInterval = setInterval(async () => {
+    try {
+      const status = await checkUserStatus(email.value)
+      const wasBlocked = statusInfo.value?.disabled === true
+      const isNowUnblocked = status.disabled === false || status.attempts < MAX_ATTEMPTS
+      
+      // Mettre à jour le statut
+      statusInfo.value = {
+        email: email.value,
+        attempts: status.attempts,
+        disabled: status.disabled
+      }
+      
+      // Si débloqu automatiquement, nettoyer le message d'erreur
+      if (wasBlocked && isNowUnblocked) {
+        error.value = '' // Effacer l'erreur
+        console.log('✅ Compte débloqu! Vous pouvez maintenant vous connecter')
+      }
+    } catch (err) {
+      console.warn('Auto-refresh statut failed:', err)
+    }
+  }, 5000)
+}
+
+// Watch sur l'email pour setup/cleanup l'auto-refresh
+watch(email, (newEmail) => {
+  if (newEmail) {
+    autoRefreshStatus()
+  } else {
+    if (statusRefreshInterval) {
+      clearInterval(statusRefreshInterval)
+      statusRefreshInterval = null
+    }
+  }
+})
+
+// Cleanup quand on quitte la page
+onUnmounted(() => {
+  if (statusRefreshInterval) {
+    clearInterval(statusRefreshInterval)
+  }
+})
 
 const login = async () => {
-  errorMessage.value = ''
+  error.value = ''
+  loading.value = true
 
-  console.log('EMAIL:', email.value)
-  console.log('PASSWORD:', password.value)
+  try {
+    const status = await checkUserStatus(email.value)
+    
+    // Vérifier UNIQUEMENT le flag disabled de Firebase Auth (source de vérité)
+    if (status.disabled) {
+      error.value = 'Compte bloqué. Contactez un administrateur.'
+      statusInfo.value = {
+        email: email.value,
+        attempts: status.attempts,
+        disabled: true
+      }
+      return
+    }
 
-  if (!email.value || !password.value) {
-    errorMessage.value = 'Veuillez remplir tous les champs'
+    console.log('✅ Compte actif dans Firebase Auth, tentative de login...')
+    await signInWithEmailAndPassword(auth, email.value, password.value)
+    await resetLoginAttempts(email.value)
+    statusInfo.value = null
+    console.log('✅ Login réussi, redirection vers /carte')
+    router.push('/carte')
+  } catch (err: any) {
+    let recorded: { attempts: number; disabled: boolean } | null = null
+
+    try {
+      recorded = await registerFailedLogin(email.value)
+      const reachedLimit = recorded.disabled || recorded.attempts >= MAX_ATTEMPTS
+      if (reachedLimit) {
+        error.value = 'Compte bloqué après plusieurs tentatives. Contactez un administrateur.'
+        statusInfo.value = { email: email.value, attempts: recorded.attempts, disabled: true }
+        return
+      }
+    } catch (fnErr) {
+      console.error('Erreur lors de l’enregistrement des tentatives:', fnErr)
+    }
+
+    if (err.code === 'auth/user-not-found') {
+      error.value = 'Utilisateur non trouvé'
+    } else if (err.code === 'auth/wrong-password') {
+      error.value = 'Mot de passe incorrect'
+    } else if (err.code === 'auth/user-disabled') {
+      error.value = 'Compte désactivé. Contactez un administrateur.'
+    } else if (err.code === 'auth/too-many-requests') {
+      error.value = 'Trop de tentatives. Réessayez plus tard ou contactez un administrateur.'
+    } else {
+      error.value = err.message
+    }
+
+    if (recorded && !recorded.disabled) {
+      error.value += ` (${recorded.attempts}/${MAX_ATTEMPTS})`
+      statusInfo.value = {
+        email: email.value,
+        attempts: recorded.attempts,
+        disabled: false
+      }
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const goToSignup = () => {
+  router.push('/signup')
+}
+
+const loginAsVisitor = () => {
+  router.push('/carte')
+}
+
+const checkStatus = async () => {
+  if (!email.value) {
+    error.value = 'Veuillez entrer un email d\'abord'
+    return
+  }
+  
+  try {
+    statusInfo.value = null
+    error.value = ''
+    loading.value = true
+    
+    const status = await checkUserStatus(email.value)
+
+    statusInfo.value = {
+      email: email.value,
+      attempts: status.attempts,
+      disabled: status.disabled
+    }
+
+    if (!status.exists) {
+      error.value = 'Aucune tentative enregistrée pour ce compte.'
+    }
+
+    console.log('Statut complet:', status)
+  } catch (err: any) {
+    error.value = 'Erreur lors de la vérification: ' + err.message
+    console.error('Erreur:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+const forceDisable = async (disable: boolean) => {
+  if (!email.value) {
+    error.value = 'Veuillez entrer un email d\'abord'
     return
   }
 
   try {
-    await signInWithEmailAndPassword(
-      auth,
-      email.value.trim(),
-      password.value
-    )
-
-    console.log('✅ Connexion réussie!')
-    router.push('/carte')
-
-  } catch (error) {
-    const err = error as FirebaseError
-    console.error(' Erreur:', err.code, err.message)
-
-    switch (err.code) {
-      case 'auth/user-not-found':
-        errorMessage.value = "Aucun compte n'existe avec cet email"
-        break
-      case 'auth/wrong-password':
-        errorMessage.value = 'Mot de passe incorrect'
-        break
-      case 'auth/invalid-email':
-        errorMessage.value = 'Email invalide'
-        break
-      case 'auth/invalid-credential':
-        errorMessage.value = 'Email ou mot de passe incorrect'
-        break
-      default:
-        errorMessage.value = `Erreur de connexion: ${err.code}`
+    loading.value = true
+    error.value = ''
+    const result = await updateUserStatus(email.value, disable)
+    statusInfo.value = {
+      email: email.value,
+      attempts: 0, // Reset attempts when updating status
+      disabled: result.disabled
     }
+  } catch (err: any) {
+    error.value = 'Erreur mise à jour statut: ' + (err?.message || err)
+  } finally {
+    loading.value = false
+  }
+}
+
+const resetAttempts = async () => {
+  if (!email.value) {
+    error.value = 'Veuillez entrer un email d\'abord'
+    return
+  }
+
+  try {
+    loading.value = true
+    error.value = ''
+    await resetLoginAttempts(email.value)
+    statusInfo.value = { email: email.value, attempts: 0, disabled: false }
+  } catch (err: any) {
+    error.value = 'Erreur réinitialisation tentatives: ' + (err?.message || err)
+  } finally {
+    loading.value = false
   }
 }
 </script>
+
+<style scoped>
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding-top: 40px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 28px;
+  margin-bottom: 30px;
+  color: #007bff;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.login-btn {
+  margin-top: 20px;
+}
+
+.error-message {
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #ffe6e6;
+  border-radius: 4px;
+}
+
+.separator {
+  text-align: center;
+  margin: 25px 0;
+  position: relative;
+}
+
+.separator p {
+  margin: 0;
+  color: #999;
+  font-size: 12px;
+}
+</style>

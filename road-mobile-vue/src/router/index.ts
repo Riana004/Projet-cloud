@@ -1,48 +1,51 @@
-import { createRouter, createWebHistory } from '@ionic/vue-router'
-import { RouteRecordRaw } from 'vue-router'
-import { auth } from '@/firebase/firebase'
+import { createRouter, createWebHistory } from 'vue-router';
+import TestPage from '../views/TestPage.vue';
+import LoginPage from '../views/LoginPage.vue';
+import SignupPage from '../views/SignupPage.vue';
+import CartePage from '../views/CartePage.vue';
+import SignalementPage from '../views/SignalementPage.vue';
+import SignalementDetailPage from '../views/SignalementDetailPage.vue';
 
-const routes: Array<RouteRecordRaw> = [
+const routes = [
   {
     path: '/',
     redirect: '/login'
   },
   {
+    path: '/test',
+    name: 'Test',
+    component: TestPage,
+  },
+  {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/LoginPage.vue')
+    component: LoginPage,
+  },
+  {
+    path: '/signup',
+    name: 'Signup',
+    component: SignupPage,
   },
   {
     path: '/carte',
     name: 'Carte',
-    component: () => import('@/views/CartePage.vue'),
-    meta: { requiresAuth: true }
+    component: CartePage,
   },
   {
     path: '/signalement',
     name: 'Signalement',
-    component: () => import('@/views/SignalementPage.vue'),
-    meta: { requiresAuth: true }
-  }
-]
+    component: SignalementPage,
+  },
+  {
+    path: '/signalement/:id',
+    name: 'SignalementDetail',
+    component: SignalementDetailPage,
+  },
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes
-})
+  history: createWebHistory(),
+  routes,
+});
 
-// Guard pour vérifier l'authentification
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const isAuthenticated = auth.currentUser
-
-  if (requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if (to.path === '/login' && isAuthenticated) {
-    next('/carte')
-  } else {
-    next()
-  }
-})
-
-export default router
+export default router;

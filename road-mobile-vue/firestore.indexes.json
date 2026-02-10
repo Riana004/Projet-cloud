@@ -1,0 +1,37 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "signalements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "id_utilisateur", "order": "ASCENDING" },
+        { "fieldPath": "date_signalement", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "id_signalement", "order": "ASCENDING" },
+        { "fieldPath": "date_ajout", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "avancement",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "signalementId", "order": "ASCENDING" },
+        { "fieldPath": "date_modification", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Règles pour les photos
+    match /photos/{photoId} {
+      // Lecture : tout le monde peut voir les photos
+      allow read: if true;
+      
+      // Écriture désactivée : les uploads se font désormais via Cloudinary.
+      // Empêche tout nouvel upload vers Firebase Storage depuis le client.
+      allow write: if false;
+    }
+
+    // Règle par défaut : refuser tout accès non spécifié
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
