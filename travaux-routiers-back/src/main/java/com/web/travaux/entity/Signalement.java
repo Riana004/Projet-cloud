@@ -60,4 +60,10 @@ public class Signalement {
     @OneToMany(mappedBy = "signalement", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Photo> photos;
 
+    @Column(name = "prix_par_m2", nullable = false)
+    private double prix_par_m2;
+
+    @Column(name = "int", nullable = false)
+    private int niveau;
+
 }
