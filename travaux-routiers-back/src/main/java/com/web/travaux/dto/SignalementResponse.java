@@ -7,6 +7,7 @@ public class SignalementResponse {
     private String description;
     private LocalDateTime date;
     private String status;
+    private double pourcentage;
     private double surfaceM2;
     private double budget;
     private String entreprise;
@@ -16,12 +17,13 @@ public class SignalementResponse {
     public SignalementResponse() {
     }
 
-    public SignalementResponse(Long id, String description, LocalDateTime date, String status,
+    public SignalementResponse(Long id, String description, LocalDateTime date, String status,double pourcentage,
                                double surfaceM2, double budget, String entreprise, double lat, double lng) {
         this.id = id;
         this.description = description;
         this.date = date;
         this.status = status;
+        this.pourcentage = pourcentage;
         this.surfaceM2 = surfaceM2;
         this.budget = budget;
         this.entreprise = entreprise;
@@ -99,5 +101,13 @@ public class SignalementResponse {
 
     public void setLng(double lng) {
         this.lng = lng;
+    }
+
+    public double getPourcentage(){
+        return pourcentage;
+    }
+
+    public void setPourcentage(double pourcentage){
+        this.pourcentage = pourcentage;
     }
 }

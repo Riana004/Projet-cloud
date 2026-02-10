@@ -13,14 +13,14 @@ public class LoginService {
 
     private final LocalAuthService localAuth;
     private final FirebaseAuthService firebaseAuth;
-    private final AuthService securityService;
+    private final AuthService securityService; // C'est lui qui pilote Firebase + Postgres
     private final ConnectivityService connectivity;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder; // Injection via l'interface
 
     public String login(String email, String password) {
         // 1. Check sécurité locale (Postgres)
-        if (securityService.isUserLocallyBlocked(email)) {
+        if (securityService.isUserBlocked(email)) {
             throw new RuntimeException("Compte bloqué. Trop de tentatives infructueuses.");
         }
 
@@ -47,7 +47,7 @@ public class LoginService {
         } else {
             // C'est ici que handleFailedLogin est appelé si l'auth échoue
             securityService.handleFailedLogin(email);
-            throw new RuntimeException("Identifiants incorrects.");
+            throw new RuntimeException("Échec de l'authentification. Vérifiez vos identifiants.");
         }
     }
 

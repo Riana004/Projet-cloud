@@ -14,3 +14,11 @@ Thumbs.db
 
 # Env
 .env
+<<<<<<< HEAD
+# Firebase credentials
+serviceAccountKey.json
+src/main/resources/**/serviceAccountKey.json
+**/serviceAccountKey.json
+src/main/resources/serviceAccountKey.json
+=======
+>>>>>>> 31cc15c9a79236d8b32735cc960b5a8b3e3642a7

@@ -4,7 +4,6 @@ package com.web.travaux.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.sql.Timestamp;
-
 @Entity
 @Table(name = "users")
 @Getter @Setter 
@@ -30,4 +29,6 @@ public class User {
 
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
+
+
 }

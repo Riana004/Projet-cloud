@@ -25,7 +25,7 @@ public class Signalement {
     @Column(name = "id_utilisateur", nullable = false, length = 255)
     private String idUtilisateur;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "date_signalement", nullable = false)
@@ -37,10 +37,10 @@ public class Signalement {
     @Column(nullable = false)
     private Double longitude;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_statut")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private StatutSignalement statut;
+
 
     @Column(name = "is_dirty", nullable = false)
     private boolean isDirty;
@@ -56,5 +56,8 @@ public class Signalement {
 
     @Column(name = "entreprise_concerne", nullable = false, length = 255)
     private String entrepriseConcerne;
+
+    @OneToMany(mappedBy = "signalement", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Photo> photos;
 
 }

@@ -35,3 +35,15 @@ ON CONFLICT (config_key) DO NOTHING;
 -- Index pour optimiser les recherches
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+
+ALTER TABLE public.signalement
+ALTER COLUMN budget DROP NOT NULL,
+ALTER COLUMN date_signalement DROP NOT NULL,
+ALTER COLUMN description DROP NOT NULL,
+ALTER COLUMN entreprise_concerne DROP NOT NULL,
+ALTER COLUMN id_utilisateur DROP NOT NULL,
+ALTER COLUMN is_dirty DROP NOT NULL,
+ALTER COLUMN latitude DROP NOT NULL,
+ALTER COLUMN longitude DROP NOT NULL,
+ALTER COLUMN surface DROP NOT NULL,
+ALTER COLUMN updated_at DROP NOT NULL;

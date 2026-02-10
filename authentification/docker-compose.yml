@@ -22,7 +22,9 @@ services:
     container_name: spring_app
     ports:
       - "8080:8080"
-    restart: on-failure
+    volumes:
+      - .:/app                     # Lie ton code source au conteneur
+      - maven-cache:/root/.m2      # Garde les dépendances en cache (évite le timeout TLS)
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/auth_db
       SPRING_DATASOURCE_USERNAME: user
