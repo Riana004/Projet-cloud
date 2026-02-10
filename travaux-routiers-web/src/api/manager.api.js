@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const MANAGER_API = "http://localhost:8086/api/manager/reports";
+const MANAGER_API = "http://localhost:8081/api/manager/reports";
 const AUTH_API = "http://localhost:8080/api/auth";
-const STATS_API = "http://localhost:8086/api/stats";
+const STATS_API = "http://localhost:8081/api/stats";
 
 export const updateReport = (id, data) =>
   axios.put(`${MANAGER_API}/${id}`, data);

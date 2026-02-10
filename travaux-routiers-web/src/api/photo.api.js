@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const SIGNAL_API = "http://localhost:8086/api/signalements"; // 👈 nouveau
+const SIGNAL_API = "http://localhost:8081/api/signalements"; // 👈 nouveau
 
 // ==================== PHOTOS ====================
 

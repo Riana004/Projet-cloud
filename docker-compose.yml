@@ -1,11 +1,14 @@
+name: travaux
 services:
   db:
-    image: postgres:latest
-    container_name: travaux_postgres
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: signalement_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - "5431:5432"
     healthcheck:
@@ -13,9 +16,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - shared
   travaux-back:
     build: ./travaux-routiers-back
-    container_name: travaux_back
     ports:
       - "8081:8081"
     volumes:
@@ -31,9 +35,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - shared
   travaux-web:
     build: ./travaux-routiers-web
-    container_name: travaux_web
     ports:
       - "5173:5173"
     volumes:
@@ -43,7 +48,14 @@ services:
       VITE_API_BASE_URL: http://localhost:8081
     depends_on:
       - travaux-back
+    networks:
+      - shared
 
 volumes:
+  db-data:
   maven-cache:
   node_modules:
+
+networks:
+  shared:
+    name: project_shared

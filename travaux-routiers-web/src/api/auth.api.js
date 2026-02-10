@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const AUTH_API_URL_FIREBASE = "http://localhost:8080/api/auth";
-const AUTH_API_URL_LOCAL_ROLE = "http://localhost:8086/api/auth";
+const AUTH_API_URL_LOCAL_ROLE = "http://localhost:8081/api/auth";
 
 // 🔐 Firebase + sécurité locale
 export const registerFirebaseApi = (data) => {
@@ -53,6 +53,7 @@ export const loginRoleApi = (data) => {
     `${AUTH_API_URL_LOCAL_ROLE}/login-role`,
     data,
     {
+      withCredentials: true,
       headers: { "Content-Type": "application/json" }
     }
   );

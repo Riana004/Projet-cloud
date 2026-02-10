@@ -37,3 +37,5 @@ cartes/data/styles/**/sprite*
 
 travaux-routiers-back/src/main/resources/serviceAccountKey.json
 
+travaux-routiers-back/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+travaux-routiers-back/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
