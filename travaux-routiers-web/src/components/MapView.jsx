@@ -84,8 +84,8 @@ export default function MapView({ reports }) {
       style={{ height: "90vh", width: "100%" }}
     >
       <TileLayer
-        // url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        url="http://localhost:8082/styles/basic/{z}/{x}/{y}.png"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        // url="http://localhost:8082/styles/basic/{z}/{x}/{y}.png"
         attribution="&copy; OpenStreetMap contributors"
       />
 
@@ -105,9 +105,13 @@ export default function MapView({ reports }) {
             🏷 Statut : {r.statut.statut} - {r.statut.pourcentage}
             <br />
             📐 Surface : {r.surface} m²
-            <br />
-            💰 Budget : {r.budget?.toLocaleString()} Ar
-            <br />
+          <br />
+          🏢 Niveau : {r.niveau}
+          <br />
+          💰 Prix/m² : {r.prix_par_m2?.toLocaleString()} Ar
+          <br />
+          💵 Budget : {r.surface * r.niveau * r.prix_par_m2} Ar
+          <br />
             🏗 Entreprise : {r.entrepriseConcerne}
 
             <hr />

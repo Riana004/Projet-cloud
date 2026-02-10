@@ -15,7 +15,6 @@ function Toast({ message, type, onClose }) {
   );
 }
 
-// NEW → fonction pour date ISO
 const nowISO = () => {
   const d = new Date();
   return d.toISOString().slice(0, 16); // format datetime-local
@@ -30,7 +29,7 @@ export default function ReportTable({ reports, refresh }) {
     setEditedReports(prev => ({
       ...prev,
       [id]: {
-        dateModification: prev[id]?.dateModification || nowISO(), // NEW
+        dateModification: prev[id]?.dateModification || nowISO(),
         ...prev[id],
         [field]: value
       }
@@ -89,9 +88,11 @@ export default function ReportTable({ reports, refresh }) {
                 <th>ID</th>
                 <th>Statut</th>
                 <th>Surface</th>
+                <th>Prix/m²</th>
+                <th>Niveau</th>
                 <th>Budget</th>
                 <th>Entreprise</th>
-                <th>Date modif</th> {/* NEW */}
+                <th>Date modif</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -99,6 +100,12 @@ export default function ReportTable({ reports, refresh }) {
             <tbody>
               {reports.map(r => {
                 const edited = editedReports[r.id] || r;
+
+                // 🔥 Calcul live du budget
+                const budget =
+                  (Number(edited.surface) || 0) *
+                  (Number(edited.prix_par_m2) || 0) *
+                  (Number(edited.niveau) || 0);
 
                 return (
                   <tr key={r.id} className={getRowClass(r.id)}>
@@ -119,32 +126,45 @@ export default function ReportTable({ reports, refresh }) {
                       </select>
                     </td>
 
-                    <td>
-                      <input
-                        type="number"
-                        value={edited.surfaceM2}
-                        className="form-control form-control-sm"
-                        onChange={e =>
-                          handleEdit(r.id, "surfaceM2", e.target.value)
-                        }
-                      />
-                    </td>
+                   <td>
+  <input
+    type="number"
+    value={edited.surface || ""}
+    className="form-control form-control-sm"
+    onChange={e =>
+      handleEdit(r.id, "surface", e.target.value)
+    }
+  />
+</td>
 
-                    <td>
-                      <input
-                        type="number"
-                        value={edited.budget}
-                        className="form-control form-control-sm"
-                        onChange={e =>
-                          handleEdit(r.id, "budget", e.target.value)
-                        }
-                      />
-                    </td>
+<td>
+  <input
+    type="number"
+    value={edited.prix_par_m2 || ""}
+    className="form-control form-control-sm"
+    onChange={e =>
+      handleEdit(r.id, "prix_par_m2", e.target.value)
+    }
+  />
+</td>
+
+<td>
+  <input
+    type="number"
+    value={edited.niveau || ""}
+    className="form-control form-control-sm"
+    onChange={e =>
+      handleEdit(r.id, "niveau", e.target.value)
+    }
+  />
+</td>
+
+                    <td>{budget.toLocaleString()} Ar</td> {/* readonly */}
 
                     <td>
                       <input
                         type="text"
-                        value={edited.entreprise}
+                        value={edited.entreprise || ""}
                         className="form-control form-control-sm"
                         onChange={e =>
                           handleEdit(r.id, "entreprise", e.target.value)
@@ -152,7 +172,6 @@ export default function ReportTable({ reports, refresh }) {
                       />
                     </td>
 
-                    {/* NEW → champ date */}
                     <td>
                       <input
                         type="datetime-local"
