@@ -45,8 +45,7 @@ public class SignalementController {
         signalement.setDirty(false);
         return signalementRepository.save(signalement);
     }
-
-    @PutMapping("/{id}")
+@PutMapping("/{id}")
 public ResponseEntity<Signalement> updateSignalement(
         @PathVariable Long id,
         @RequestBody UpdateSignalementDTO dto
@@ -55,39 +54,38 @@ public ResponseEntity<Signalement> updateSignalement(
 
         var ancienStatut = signalement.getStatut();
         var nouveauStatut = statutRepository.findByStatut(dto.getStatut());
-        System.out.println("Ancien: " + ancienStatut.getStatut());
-        System.out.println("Nouveau: " + nouveauStatut.getStatut());
 
         if (nouveauStatut == null) {
             throw new RuntimeException("Statut introuvable : " + dto.getStatut());
         }
 
+        // 🔹 Vérification conditionnelle : niveau modifiable seulement si statut actuel = "Nouveau"
+        if (!"Nouveau".equalsIgnoreCase(signalement.getStatut().getStatut())
+            && dto.getNiveau() != signalement.getNiveau()) {
+            throw new RuntimeException("Impossible de modifier le niveau sauf si le statut est 'Nouveau'");
+        }
+
+        // Champs modifiables
         signalement.setDescription(dto.getDescription());
         signalement.setLatitude(dto.getLatitude());
         signalement.setLongitude(dto.getLongitude());
         signalement.setSurface(dto.getSurface());
         signalement.setPrix_par_m2(dto.getPrixParM2());
+        signalement.setNiveau(dto.getNiveau());
+        signalement.setEntrepriseConcerne(dto.getEntrepriseConcerne());
 
-        // 🔹 Vérification avant modification du niveau
-        if (ancienStatut != null && "En cours".equalsIgnoreCase(ancienStatut.getStatut())) {
-            signalement.setNiveau(dto.getNiveau());
-        } else if (dto.getNiveau() != signalement.getNiveau()) {
-            throw new RuntimeException("Impossible de modifier le niveau sauf si le statut est 'Nouveau'");
-        }
-
+        // Recalcul du budget
         double budget = signalement.getPrix_par_m2() * signalement.getNiveau() * signalement.getSurface();
         signalement.setBudget(budget);
 
-        signalement.setEntrepriseConcerne(dto.getEntrepriseConcerne());
+        // Mise à jour du statut
         signalement.setStatut(nouveauStatut);
         signalement.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
 
         Signalement saved = signalementRepository.save(signalement);
 
-        // 🔹 Sauvegarde de l'avancement si statut changé
-        if (ancienStatut != null &&
-            !ancienStatut.getId().equals(nouveauStatut.getId())) {
-
+        // 🔹 Sauvegarde de l'avancement uniquement si le statut change
+        if (ancienStatut != null && !ancienStatut.getId().equals(nouveauStatut.getId())) {
             Avancement avancement = Avancement.builder()
                     .signalement(saved)
                     .ancienStatut(ancienStatut)
@@ -99,7 +97,6 @@ public ResponseEntity<Signalement> updateSignalement(
         }
 
         return ResponseEntity.ok(saved);
-
     }).orElse(ResponseEntity.notFound().build());
 }
 

@@ -112,8 +112,14 @@ public void updateReport(Long id, UpdateReportDTO dto) {
     if (dto.getPrixParM2() != null)
         s.setPrix_par_m2(dto.getPrixParM2());
 
-    if (dto.getNiveau() != null)
-        s.setNiveau(dto.getNiveau());
+    if (dto.getNiveau() != null) {
+    String statutActuel = s.getStatut() != null ? s.getStatut().getStatut() : "";
+    if (!"En cours".equalsIgnoreCase(statutActuel)) {
+        throw new RuntimeException("Impossible de modifier le niveau sauf si le statut est 'Nouveau'");
+    }
+    s.setNiveau(dto.getNiveau());
+}
+
 
     if (dto.getEntreprise() != null)
         s.setEntrepriseConcerne(dto.getEntreprise());
