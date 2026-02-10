@@ -64,7 +64,12 @@ public ResponseEntity<Signalement> updateSignalement(
         signalement.setLatitude(dto.getLatitude());
         signalement.setLongitude(dto.getLongitude());
         signalement.setSurface(dto.getSurface());
-        signalement.setBudget(dto.getBudget());
+        signalement.setPrix_par_m2(dto.getPrixParM2());
+        signalement.setNiveau(dto.getNiveau());
+
+        double budget = dto.getPrixParM2() * dto.getNiveau() * dto.getSurface();
+        signalement.setBudget(budget);
+
         signalement.setEntrepriseConcerne(dto.getEntrepriseConcerne());
         signalement.setStatut(nouveauStatut);
         signalement.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));

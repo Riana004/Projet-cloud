@@ -34,19 +34,22 @@ public class ReportService {
     }
 
     private ReportDTO toDTO(Signalement s) {
-        ReportDTO dto = new ReportDTO();
-        dto.setId(s.getId());
-        dto.setLatitude(s.getLatitude());
-        dto.setLongitude(s.getLongitude());
-        dto.setDate(s.getDateSignalement());
-        dto.setStatut(s.getStatut().getStatut());
-        dto.setPourcentage(s.getStatut().getPourcentage());
-        dto.setSurfaceM2(s.getSurface());
-        dto.setBudget(s.getBudget());
-        dto.setEntreprise(s.getEntrepriseConcerne());
-        dto.setDescription(s.getDescription());
-        return dto;
-    }
+    ReportDTO dto = new ReportDTO();
+    dto.setId(s.getId());
+    dto.setLatitude(s.getLatitude());
+    dto.setLongitude(s.getLongitude());
+    dto.setDate(s.getDateSignalement());
+    dto.setStatut(s.getStatut().getStatut());
+    dto.setPourcentage(s.getStatut().getPourcentage());
+    dto.setSurface(s.getSurface());
+    dto.setPrix_par_m2(s.getPrix_par_m2());
+    dto.setNiveau(s.getNiveau());
+    dto.setBudget(s.getNiveau() * s.getPrix_par_m2() * s.getSurface());
+    dto.setEntreprise(s.getEntrepriseConcerne());
+    dto.setDescription(s.getDescription());
+    return dto;
+}
+
 
     // ===============================
     // RULES TRANSITION
@@ -60,58 +63,77 @@ public class ReportService {
     // ===============================
     // UPDATE REPORT
     // ===============================
-    @Transactional
-    public void updateReport(Long id, UpdateReportDTO dto) {
+  @Transactional
+public void updateReport(Long id, UpdateReportDTO dto) {
 
-        Signalement s = signalementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Signalement introuvable"));
+    Signalement s = signalementRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Signalement introuvable"));
 
-        var ancienStatut = s.getStatut();
+    var ancienStatut = s.getStatut();
 
-        // ----- Gestion statut -----
-        if (dto.getStatut() != null) {
+    // ----- Gestion du statut -----
+    if (dto.getStatut() != null) {
 
-            var nouveauStatut = statutRepo.findByStatut(dto.getStatut());
+        var nouveauStatut = statutRepo.findByStatut(dto.getStatut());
 
-            if (nouveauStatut == null)
-                throw new RuntimeException("Statut inconnu: " + dto.getStatut());
+        if (nouveauStatut == null)
+            throw new RuntimeException("Statut inconnu: " + dto.getStatut());
 
-            // Si statut identique → rien faire
-            if (!ancienStatut.getId().equals(nouveauStatut.getId())) {
+        // Si statut identique → rien faire
+        if (!ancienStatut.getId().equals(nouveauStatut.getId())) {
 
-                // Vérifier transition autorisée
-                if (!isTransitionAllowed(ancienStatut.getId(), nouveauStatut.getId())) {
-                    throw new RuntimeException(
-                        "Transition interdite: " +
-                        ancienStatut.getId() + " → " + nouveauStatut.getId()
-                    );
-                }
-
-                // appliquer changement
-                s.setStatut(nouveauStatut);
-
-                // créer avancement
-                Avancement avancement = Avancement.builder()
-                        .signalement(s)
-                        .ancienStatut(ancienStatut)
-                        .nouveauStatut(nouveauStatut)
-                        .dateModification(dto.getDateModification())
-                        .build();
-
-                avancementRepository.save(avancement);
+            // Vérifier transition autorisée
+            if (!isTransitionAllowed(ancienStatut.getId(), nouveauStatut.getId())) {
+                throw new RuntimeException(
+                    "Transition interdite: " +
+                    ancienStatut.getId() + " → " + nouveauStatut.getId()
+                );
             }
+
+            // appliquer changement
+            s.setStatut(nouveauStatut);
+
+            // créer avancement
+            Avancement avancement = Avancement.builder()
+                    .signalement(s)
+                    .ancienStatut(ancienStatut)
+                    .nouveauStatut(nouveauStatut)
+                    .dateModification(dto.getDateModification())
+                    .build();
+
+            avancementRepository.save(avancement);
         }
-
-        // ----- autres champs -----
-        if (dto.getSurfaceM2() != null)
-            s.setSurface(dto.getSurfaceM2());
-
-        if (dto.getBudget() != null)
-            s.setBudget(dto.getBudget());
-
-        if (dto.getEntreprise() != null)
-            s.setEntrepriseConcerne(dto.getEntreprise());
     }
+
+    // ----- Autres champs -----
+    if (dto.getSurface() != null)
+        s.setSurface(dto.getSurface());
+
+    if (dto.getPrixParM2() != null)
+        s.setPrix_par_m2(dto.getPrixParM2());
+
+    if (dto.getNiveau() != null)
+        s.setNiveau(dto.getNiveau());
+
+    if (dto.getEntreprise() != null)
+        s.setEntrepriseConcerne(dto.getEntreprise());
+
+    // 🔥 Calcul automatique du budget
+    double surface = s.getSurface();
+    double prixParM2 = s.getPrix_par_m2();
+    int niveau = s.getNiveau();
+
+    double budget = prixParM2 * niveau * surface;
+    s.setBudget(budget);
+
+    // ----- Date de modification -----
+    if (dto.getDateModification() != null)
+        s.setUpdatedAt(java.sql.Timestamp.valueOf(dto.getDateModification()));
+
+    // ----- Sauvegarde finale -----
+    signalementRepository.save(s);
+}
+
 
     // ===============================
     // DELETE

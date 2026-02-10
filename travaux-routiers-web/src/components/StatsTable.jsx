@@ -2,7 +2,7 @@ export default function StatsTable({ reports }) {
   const totalPoints = reports.length;
 
   const totalSurface = reports.reduce(
-    (sum, r) => sum + (r.surfaceM2 || 0),
+    (sum, r) => sum + (r.surface || 0),
     0
   );
 

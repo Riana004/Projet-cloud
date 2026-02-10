@@ -114,87 +114,81 @@ public class FirebaseSyncService {
     }
 
 
-   @Transactional
-    public void syncFromFirebaseToPostgres() {
+   
+@Transactional
+public void syncFromFirebaseToPostgres() {
+    try {
+        ApiFuture<QuerySnapshot> future = firestore.collection("signalements").get();
+        List<QueryDocumentSnapshot> docs = future.get().getDocuments();
 
-        try {
-            ApiFuture<QuerySnapshot> future =
-                firestore.collection("signalements").get();
+        for (QueryDocumentSnapshot doc : docs) {
+            String firebaseId = doc.getId();
 
-            List<QueryDocumentSnapshot> docs = future.get().getDocuments();
-
-            for (QueryDocumentSnapshot doc : docs) {
-
-                String firebaseId = doc.getId();
-
-                // 🔍 Vérifier si le signalement existe déjà
-               List<Signalement> existingList =
-                    signalementRepository.findAllByIdUtilisateur(firebaseId);
-
-                Signalement s;
-
-                if (!existingList.isEmpty()) {
-                    s = existingList.get(0); // on prend le premier
-                    if (existingList.size() > 1) {
-                        System.out.println("⚠ Doublons détectés pour " + firebaseId);
-                    }
-                } else {
-                    s = new Signalement();
+            List<Signalement> existingList = signalementRepository.findAllByIdUtilisateur(firebaseId);
+            Signalement s;
+            if (!existingList.isEmpty()) {
+                s = existingList.get(0);
+                if (existingList.size() > 1) {
+                    System.out.println("⚠ Doublons détectés pour " + firebaseId);
                 }
-
-                s.setIdUtilisateur(firebaseId);
-                s.setDescription(doc.getString("description"));
-
-                // 🌐 GeoPoint → latitude / longitude
-                com.google.cloud.firestore.GeoPoint geo = doc.getGeoPoint("location");
-                if (geo != null) {
-                    s.setLatitude(geo.getLatitude());
-                    s.setLongitude(geo.getLongitude());
-                } else {
-                    s.setLatitude(0.0);
-                    s.setLongitude(0.0);
-                    System.out.println("⚠ Signalement " + firebaseId + " sans position, lat/lng = 0.0");
-                }
-
-                s.setSurface(doc.getDouble("surface") != null ? doc.getDouble("surface") : 0.0);
-                s.setBudget(doc.getDouble("budget") != null ? doc.getDouble("budget") : 0.0);
-
-                // ✅ entreprise_concerne obligatoire → valeur par défaut si null
-                String entreprise = doc.getString("entreprise_concerne");
-                s.setEntrepriseConcerne(entreprise != null ? entreprise : "Non renseigné");
-
-                // 🕒 Date
-                com.google.cloud.Timestamp ts = doc.getTimestamp("date_signalement");
-                if (ts != null) {
-                    s.setDateSignalement(
-                        ts.toDate()
-                        .toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime()
-                    );
-                } else {
-                    s.setDateSignalement(LocalDateTime.now());
-                    System.out.println("⚠ Signalement " + firebaseId + " sans date, mise à jour avec maintenant");
-                }
-
-                // 📌 Statut
-                String statutLabel = doc.getString("id_statut");
-                StatutSignalement statut = statutRepo.findByStatut(statutLabel != null ? statutLabel : "Nouveau");
-                s.setStatut(statut);
-
-                if (ts != null) {
-                    s.setUpdatedAt(ts.toSqlTimestamp());
-                } else {
-                    s.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
-                }
-
-                signalementRepository.save(s);
+            } else {
+                s = new Signalement();
             }
 
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur sync Firebase → Postgres", e);
+            s.setIdUtilisateur(firebaseId);
+            s.setDescription(doc.getString("description"));
+
+            // GeoPoint → latitude / longitude
+            com.google.cloud.firestore.GeoPoint geo = doc.getGeoPoint("location");
+            if (geo != null) {
+                s.setLatitude(geo.getLatitude());
+                s.setLongitude(geo.getLongitude());
+            } else {
+                s.setLatitude(0.0);
+                s.setLongitude(0.0);
+            }
+
+            // Surface / Budget
+            s.setSurface(doc.getDouble("surface") != null ? doc.getDouble("surface") : 0.0);
+            s.setBudget(doc.getDouble("budget") != null ? doc.getDouble("budget") : 0.0);
+
+            // Niveau / Prix_par_m2
+            s.setNiveau(doc.getLong("niveau") != null ? doc.getLong("niveau").intValue() : 1);
+            s.setPrix_par_m2(doc.getDouble("prix_par_m2") != null ? doc.getDouble("prix_par_m2") : 1000.0);
+
+            // entreprise_concerne
+            String entreprise = doc.getString("entreprise_concerne");
+            s.setEntrepriseConcerne(entreprise != null ? entreprise : "Non renseigné");
+
+            // Date signalement
+            com.google.cloud.Timestamp ts = doc.getTimestamp("date_signalement");
+            if (ts != null) {
+                s.setDateSignalement(
+                    ts.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                );
+            } else {
+                s.setDateSignalement(LocalDateTime.now());
+            }
+
+            // Statut
+            String statutLabel = doc.getString("id_statut");
+            StatutSignalement statut = statutRepo.findByStatut(statutLabel != null ? statutLabel : "Nouveau");
+            s.setStatut(statut);
+
+            // Updated_at
+            if (ts != null) {
+                s.setUpdatedAt(ts.toSqlTimestamp());
+            } else {
+                s.setUpdatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+            }
+
+            signalementRepository.save(s);
         }
+
+    } catch (Exception e) {
+        throw new RuntimeException("Erreur sync Firebase → Postgres", e);
     }
+}
 
     
 

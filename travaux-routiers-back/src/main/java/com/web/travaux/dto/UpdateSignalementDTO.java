@@ -18,6 +18,7 @@ public class UpdateSignalementDTO {
     private String statut;
 
     private LocalDateTime dateModification; // 👈 date fournie
-
+    private double prixParM2;
+    private int niveau;
     // getters / setters
 }
