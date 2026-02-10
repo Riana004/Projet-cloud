@@ -45,7 +45,8 @@ public class SignalementController {
         signalement.setDirty(false);
         return signalementRepository.save(signalement);
     }
-@PutMapping("/{id}")
+
+    @PutMapping("/{id}")
 public ResponseEntity<Signalement> updateSignalement(
         @PathVariable Long id,
         @RequestBody UpdateSignalementDTO dto
@@ -60,14 +61,21 @@ public ResponseEntity<Signalement> updateSignalement(
         if (nouveauStatut == null) {
             throw new RuntimeException("Statut introuvable : " + dto.getStatut());
         }
+
         signalement.setDescription(dto.getDescription());
         signalement.setLatitude(dto.getLatitude());
         signalement.setLongitude(dto.getLongitude());
         signalement.setSurface(dto.getSurface());
         signalement.setPrix_par_m2(dto.getPrixParM2());
-        signalement.setNiveau(dto.getNiveau());
 
-        double budget = dto.getPrixParM2() * dto.getNiveau() * dto.getSurface();
+        // 🔹 Vérification avant modification du niveau
+        if (ancienStatut != null && "Nouveau".equalsIgnoreCase(ancienStatut.getStatut())) {
+            signalement.setNiveau(dto.getNiveau());
+        } else if (dto.getNiveau() != signalement.getNiveau()) {
+            throw new RuntimeException("Impossible de modifier le niveau sauf si le statut est 'Nouveau'");
+        }
+
+        double budget = signalement.getPrix_par_m2() * signalement.getNiveau() * signalement.getSurface();
         signalement.setBudget(budget);
 
         signalement.setEntrepriseConcerne(dto.getEntrepriseConcerne());
@@ -76,6 +84,7 @@ public ResponseEntity<Signalement> updateSignalement(
 
         Signalement saved = signalementRepository.save(signalement);
 
+        // 🔹 Sauvegarde de l'avancement si statut changé
         if (ancienStatut != null &&
             !ancienStatut.getId().equals(nouveauStatut.getId())) {
 
@@ -88,6 +97,7 @@ public ResponseEntity<Signalement> updateSignalement(
 
             avancementRepository.save(avancement);
         }
+
         return ResponseEntity.ok(saved);
 
     }).orElse(ResponseEntity.notFound().build());
