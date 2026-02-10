@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView({ reports }) {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8086";
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
 
   const mockReports = [
     {
@@ -56,7 +56,7 @@ export default function MapView({ reports }) {
     if (photosByReport[id]) return;
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/signalements/${id}/photos`);
+      const res = await fetch(`${apiBaseUrl}/api/signalements/${id}/photo`);
       if (!res.ok) throw new Error("Erreur photos");
 
       const data = await res.json();

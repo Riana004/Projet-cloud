@@ -1,19 +1,10 @@
 com/web/travaux/dto/UpdateReportDTO.class
 com/web/travaux/ServletInitializer.class
-<<<<<<< HEAD
-com/web/travaux/dto/LoginRequest.class
-com/web/travaux/entity/User$UserBuilder.class
-com/web/travaux/service/ReportService.class
-com/web/travaux/entity/StatutSignalement$StatutSignalementBuilder.class
-com/web/travaux/entity/StatutSignalement.class
-com/web/travaux/dto/ReportDTO.class
-=======
 com/web/travaux/service/PhotoService.class
-com/web/travaux/entity/User$UserBuilder.class
 com/web/travaux/dto/LoginRequest.class
+com/web/travaux/entity/User$UserBuilder.class
 com/web/travaux/entity/StatutSignalement$StatutSignalementBuilder.class
 com/web/travaux/dto/StatsEntrepriseDto.class
->>>>>>> main
 com/web/travaux/dto/SignalementResponse.class
 com/web/travaux/controller/AuthController.class
 com/web/travaux/controller/StatistiqueController.class
@@ -23,11 +14,10 @@ com/web/travaux/repository/AvancementRepository.class
 com/web/travaux/dto/StatsGlobalDto.class
 com/web/travaux/entity/User.class
 com/web/travaux/repository/StatistiqueRepository.class
-com/web/travaux/entity/Avancement$AvancementBuilder.class
 com/web/travaux/dto/PhotoDTO$PhotoDTOBuilder.class
+com/web/travaux/entity/Avancement$AvancementBuilder.class
 com/web/travaux/repository/UserRepository.class
 com/web/travaux/repository/RoleRepository.class
-com/web/travaux/entity/Role$RoleBuilder.class
 com/web/travaux/entity/Role.class
 com/web/travaux/entity/Photo$PhotoBuilder.class
 com/web/travaux/entity/Signalement$SignalementBuilder.class
@@ -35,16 +25,16 @@ com/web/travaux/service/FirebaseSyncService.class
 com/web/travaux/controller/ManagerReportController.class
 com/web/travaux/service/impl/PhotoServiceImpl.class
 com/web/travaux/service/ReportService.class
-com/web/travaux/entity/StatutSignalement.class
 com/web/travaux/dto/UpdateSignalementDTO.class
+com/web/travaux/entity/StatutSignalement.class
 com/web/travaux/dto/ReportDTO.class
 com/web/travaux/dto/PhotoDTO.class
 com/web/travaux/service/StatistiqueService.class
 com/web/travaux/config/FirebaseConfig.class
 com/web/travaux/entity/Avancement.class
 com/web/travaux/dto/LoginResponse.class
-com/web/travaux/entity/Photo.class
 com/web/travaux/repository/PhotoRepository.class
+com/web/travaux/entity/Photo.class
 com/web/travaux/controller/ReportController.class
 com/web/travaux/repository/SignalementRepository.class
 com/web/travaux/controller/SignalementController.class

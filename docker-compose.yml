@@ -6,6 +6,9 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: signalement_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - "5431:5432"
     healthcheck:
@@ -49,6 +52,7 @@ services:
       - shared
 
 volumes:
+  db-data:
   maven-cache:
   node_modules:
 
