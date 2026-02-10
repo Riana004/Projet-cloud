@@ -212,7 +212,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"statut\": \"En cours\",\n  \"surfaceM2\": 150.5,\n  \"budget\": 50000.0,\n  \"entreprise\": \"BTP Expert\",\n  \"dateModification\": \"2024-01-15T10:30:00\"\n}",
+          "raw": "{\n  \"statut\": \"En cours\",\n  \"surface\": 150.5,\n  \"prixParM2\": 1000,\n  \"niveau\": 2,\n  \"entreprise\": \"BTP Expert\",\n  \"dateModification\": \"2024-01-15T10:30:00\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -495,12 +495,14 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/blocked",
+          "raw": "{{base_url_2}}/signalements/{{signalementId}}/photo",
           "host": [
-            "{{base_url}}"
+            "{{base_url_2}}"
           ],
           "path": [
-            "blocked"
+            "signalements",
+            "{{signalementId}}",
+            "photo"
           ]
         },
         "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."

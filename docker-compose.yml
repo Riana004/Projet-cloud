@@ -70,17 +70,17 @@ services:
     networks:
       - shared
 
-  osm-download:
-    image: curlimages/curl:8.6.0
-    restart: "no"
-    user: "${UID}:${GID}"
-    volumes:
-      - ./cartes/data:/data
-    command:
-      [
-        "sh","-c",
-        "mkdir -p /data/osm && if [ -f /data/osm/madagascar-latest.osm.pbf ]; then echo 'OSM extract already present'; exit 0; fi; echo 'Downloading OSM...'; tmp=/data/osm/madagascar-latest.osm.pbf.part; rm -f $$tmp; curl -L --retry 5 --retry-delay 5 --retry-connrefused -o $$tmp https://download.geofabrik.de/africa/madagascar-latest.osm.pbf; if [ ! -s $$tmp ]; then echo 'Download failed or empty'; exit 1; fi; mv $$tmp /data/osm/madagascar-latest.osm.pbf"
-      ]
+  # osm-download:
+  #   image: curlimages/curl:8.6.0
+  #   restart: "no"
+  #   user: "${UID}:${GID}"
+  #   volumes:
+  #     - ./cartes/data:/data
+  #   command:
+  #     [
+  #       "sh","-c",
+  #       "mkdir -p /data/osm && if [ -f /data/osm/madagascar-latest.osm.pbf ]; then echo 'OSM extract already present'; exit 0; fi; echo 'Downloading OSM...'; tmp=/data/osm/madagascar-latest.osm.pbf.part; rm -f $$tmp; curl -L --retry 5 --retry-delay 5 --retry-connrefused -o $$tmp https://download.geofabrik.de/africa/madagascar-latest.osm.pbf; if [ ! -s $$tmp ]; then echo 'Download failed or empty'; exit 1; fi; mv $$tmp /data/osm/madagascar-latest.osm.pbf"
+  #     ]
 
   tilemaker:
     image: ghcr.io/systemed/tilemaker:master
@@ -89,8 +89,8 @@ services:
     volumes:
       - ./cartes/data:/data
       - ./cartes/data/tilemaker:/cfg
-    depends_on:
-      - osm-download
+    # depends_on:
+    #   - osm-download
     entrypoint: ["sh","-c"]
     command:
       [
