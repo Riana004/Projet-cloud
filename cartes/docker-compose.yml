@@ -34,7 +34,7 @@ services:
     volumes:
       - ./data:/data
     ports:
-      - "8080:8080"
+      - "8082:8080"
     depends_on:
       tilemaker:
         condition: service_completed_successfully

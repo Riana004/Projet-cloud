@@ -84,7 +84,8 @@ export default function MapView({ reports }) {
       style={{ height: "90vh", width: "100%" }}
     >
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        // url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="http://localhost:8082/styles/basic/{z}/{x}/{y}.png"
         attribution="&copy; OpenStreetMap contributors"
       />
 
