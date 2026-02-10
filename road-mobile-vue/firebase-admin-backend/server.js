@@ -282,8 +282,20 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const BACKEND_IP = process.env.BACKEND_IP || '172.24.243.120';
 
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur Firebase Admin démarré sur le port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log('');
+  console.log('========================================');
+  console.log('🚀 Serveur Firebase Admin démarré');
+  console.log('========================================');
+  console.log(`   Port          : ${PORT}`);
+  console.log(`   IP Backend    : ${BACKEND_IP}`);
+  console.log(`   URL Locale    : http://localhost:${PORT}`);
+  console.log(`   URL Réseau    : http://${BACKEND_IP}:${PORT}`);
+  console.log('========================================');
+  console.log(`📍 Health check   : http://${BACKEND_IP}:${PORT}/health`);
+  console.log('💡 Pour changer IP : Éditez ../src/config.ts');
+  console.log('========================================');
+  console.log('');
 });

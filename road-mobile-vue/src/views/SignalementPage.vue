@@ -87,6 +87,19 @@
         </ion-col>
       </ion-row>
 
+      <!-- Prix par m² -->
+      <ion-row>
+        <ion-col size="12">
+          <ion-item>
+            <ion-label position="floating">Prix par m² (€)</ion-label>
+            <ion-input v-model.number="prixParM2" type="number" placeholder="Optionnel"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+      <!-- Niveau caché -->
+      <input v-model.number="niveau" type="hidden" value="0" />
+
       <!-- Entreprise concernée -->
       <ion-item>
         <ion-label position="floating">Entreprise concernée</ion-label>
@@ -234,6 +247,8 @@ const description = ref('')
 const surface = ref<number | null>(null)
 const budget = ref<number | null>(null)
 const entreprise = ref('')
+const prixParM2 = ref<number | null>(null)
+const niveau = ref<number>(0)
 const selectedLat = ref<number | null>(null)
 const selectedLng = ref<number | null>(null)
 const errorMessage = ref('')
@@ -389,6 +404,8 @@ const submitSignalement = async () => {
       surface: surface.value || 0,
       budget: budget.value || 0,
       entreprise_concerne: entreprise.value.trim() || 'Non spécifiée',
+      prix_par_m2: prixParM2.value || undefined,
+      niveau: niveau.value,
       id_status_signalement: null,
       is_dirty: false
     })
@@ -411,6 +428,8 @@ const submitSignalement = async () => {
     surface.value = null
     budget.value = null
     entreprise.value = ''
+    prixParM2.value = null
+    niveau.value = 0
     showSuccessToast.value = true
 
     // Redirection

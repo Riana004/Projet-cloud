@@ -1,0 +1,6 @@
+{
+  "appId": "com.mobile.roadmobile",
+  "appName": "road-mobile-vue",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

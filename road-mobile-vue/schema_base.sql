@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS signalements (
   surface NUMERIC DEFAULT 0,
   budget NUMERIC DEFAULT 0,
   entreprise_concerne VARCHAR(255) DEFAULT '',
+  prix_par_m2 NUMERIC,
+  niveau INTEGER DEFAULT 0,
   id_status_signalement VARCHAR(50) DEFAULT 'EN_ATTENTE',
   is_dirty BOOLEAN DEFAULT false,
   photos_count INTEGER DEFAULT 0,

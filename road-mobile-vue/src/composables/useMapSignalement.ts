@@ -25,7 +25,7 @@ export function useMapSignalement() {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
       crossOrigin: true,
-    }).addTo(map.value);
+    }).addTo(map.value as any);
 
     // Gérer les clics sur la carte
     map.value.on('click', (e: L.LeafletMouseEvent) => {
@@ -34,7 +34,7 @@ export function useMapSignalement() {
 
       // Supprimer l'ancien marqueur de sélection
       if (selectedMarker.value) {
-        map.value?.removeLayer(selectedMarker.value);
+        map.value?.removeLayer(selectedMarker.value as any);
       }
 
       // Créer un nouveau marqueur pour la position sélectionnée
@@ -48,7 +48,7 @@ export function useMapSignalement() {
           shadowSize: [41, 41],
         }),
         title: 'Position sélectionnée',
-      }).addTo(map.value!);
+      }).addTo(map.value! as any);
 
       selectedMarker.value.bindPopup('Position sélectionnée');
     });
@@ -88,7 +88,7 @@ export function useMapSignalement() {
         shadowSize: [41, 41],
       }),
       title: type,
-    }).addTo(map.value);
+    }).addTo(map.value as any);
 
     const popupContent = `
       <div style="font-size: 12px; width: 200px;">
@@ -113,7 +113,7 @@ export function useMapSignalement() {
   const removeSignalementMarker = (signalementId: string) => {
     const marker = markers.value.get(signalementId);
     if (marker && map.value) {
-      map.value.removeLayer(marker);
+      map.value.removeLayer(marker as any);
       markers.value.delete(signalementId);
     }
   };
@@ -134,7 +134,7 @@ export function useMapSignalement() {
     if (!map.value || markers.value.size === 0) return;
 
     const markerArray = Array.from(markers.value.values());
-    const group = new L.featureGroup(markerArray);
+    const group = L.featureGroup(markerArray as any);
     map.value.fitBounds(group.getBounds(), { padding: [50, 50] });
   };
 
