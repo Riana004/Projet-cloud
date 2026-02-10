@@ -1,32 +1,33 @@
 package com.web.travaux.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.sql.Timestamp;
+
 @Entity
-@Table(name = "STATUT_SIGNALLEMENT")
+@Table(name = "photos")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StatutSignalement {
+public class Photo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String statut;
+    @Column(name = "url", nullable = false, columnDefinition = "TEXT")
+    private String url;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "signalement_id", nullable = false)
+    private Signalement signalement;
 
     @Column(name = "is_dirty", nullable = false)
     private boolean isDirty;
 
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
-
-    @Column(name = "pourcentage", nullable = true)
-    private Double pourcentage;
-
 }

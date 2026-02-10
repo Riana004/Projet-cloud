@@ -29,4 +29,6 @@ public class User {
 
     @Column(name = "updated_at", nullable = false, updatable = false)
     private Timestamp updatedAt;
+
+
 }
