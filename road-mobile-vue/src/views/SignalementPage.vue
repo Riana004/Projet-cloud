@@ -389,11 +389,9 @@ const submitSignalement = async () => {
       surface: surface.value || 0,
       budget: budget.value || 0,
       entreprise_concerne: entreprise.value.trim() || 'Non spécifiée',
-      id_statut: null,
+      id_status_signalement: null,
       is_dirty: false
     })
-
-    // Uploader les photos et mettre à jour le signalement
     let photoUrls: string[] = []
     if (photos.value.length > 0) {
       photoUrls = await uploadAllPhotos(signalementId)

@@ -59,14 +59,34 @@ service cloud.firestore {
     
     // Règles pour la collection notifications
     match /notifications/{notification} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      // TEMPORARY DEV: allow public reads to simplify client-side testing of
+      // notification queries (including queries by id_avancement). Revert
+      // this change before deploying to production.
+      allow read: if true;
       allow create, update: if request.auth != null;
     }
 
-    // Règles pour la collection statut_changes
-    match /statut_changes/{change} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
+    // Règles pour la collection avancement (historique des statuts)
+    match /avancement/{change} {
+      // TEMPORARY DEV: allow public read/create to simplify local testing.
+      // Remove or tighten these rules before deploying to production.
+      allow read: if true;
+      allow create: if true;
+      // TEMPORARY: allow the owner of the avancement or an admin to update it
+      // so tests can modify existing avancement documents. Revert after testing.
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // Règles pour la collection statut_signallement (libellés de statuts)
+    match /statut_signallement/{statutId} {
+      // statuts lisibles par tous
+      allow read: if true;
+      // TEMPORARY DEV: allow authenticated writes for testing convenience.
+      // In production, change back to require admin role.
+      allow create, update: if request.auth != null;
     }
   }
 }

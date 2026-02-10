@@ -20,8 +20,8 @@
           <ion-card-header>
             <ion-card-title>{{ signalement.description.split(']')[1]?.trim() || signalement.description }}</ion-card-title>
             <ion-card-subtitle>
-              <ion-badge :color="getStatusColor(signalement.id_statut)">
-                {{ signalement.id_statut || 'EN_ATTENTE' }}
+              <ion-badge :color="getStatusColor(signalement.id_status_signalement)">
+                  {{ getStatusLabel(signalement.id_status_signalement) }}
               </ion-badge>
             </ion-card-subtitle>
           </ion-card-header>
@@ -171,6 +171,7 @@ import {
   deleteDoc
 } from 'firebase/firestore'
 import { auth, getPhotosForSignalement } from '@/firebase/firebase'
+import { getStatusLabel } from '@/firebase/firebase'
 
 const router = useRouter()
 const route = useRoute()
@@ -221,16 +222,22 @@ const loadSignalement = async () => {
     const photosData = await getPhotosForSignalement(signalementId)
     photos.value = photosData as any[]
 
-    // Charger l'historique des changements de statut
+    // Charger l'historique des changements de statut depuis `avancement`
     const changesQ = query(
-      collection(db, 'statut_changes'),
+      collection(db, 'avancement'),
       where('signalementId', '==', signalementId)
     )
     const changesSnap = await getDocs(changesQ)
-    statusChanges.value = changesSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    statusChanges.value = changesSnap.docs.map(d => {
+      const data = d.data() as any
+      return {
+        id: d.id,
+        ancienStatut: getStatusLabel(data.ancien_statut_id || data.ancienStatut || data.ancien_statut),
+        nouveauStatut: getStatusLabel(data.nouveau_statut_id || data.nouveauStatut || data.nouveau_statut),
+        dateChangement: data.date_modification || data.dateChangement || null,
+        raison: data.raison || ''
+      }
+    })
 
     // Initialiser la carte
     setTimeout(() => {
@@ -293,11 +300,10 @@ const formatDate = (timestamp: any) => {
  */
 const getStatusColor = (status: string): string => {
   const colors: { [key: string]: string } = {
-    'EN_ATTENTE': 'warning',
-    'EN_TRAITEMENT': 'primary',
-    'TRAITE': 'success',
-    'REJETE': 'danger',
-    'CLOTURE': 'medium'
+    'NOUVEAU': 'warning',
+    'EN_COURS': 'primary',
+    'RESOLU': 'success',
+    'REJETE': 'danger'
   }
   return colors[status] || 'medium'
 }

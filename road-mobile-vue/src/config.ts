@@ -3,6 +3,9 @@ export const API_CONFIG = {
   // URL du backend Spring Boot
   API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8085/api',
   
+  // URL du backend Firebase Admin (Node.js)
+  FIREBASE_ADMIN_URL: import.meta.env.VITE_FIREBASE_ADMIN_URL || 'http://localhost:3000',
+  
   // URLs spécifiques
   SIGNALEMENTS_URL: '/signalements',
   REPORTS_URL: '/reports',

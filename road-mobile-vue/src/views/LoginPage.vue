@@ -110,14 +110,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonItem, IonLabel, IonInput, IonButton
 } from '@ionic/vue'
-import { auth, registerFailedLogin, resetLoginAttempts, checkUserStatus, updateFirebaseUserStatus } from '@/firebase/firebase'
+import { auth } from '@/firebase/firebase'
 import { signInWithEmailAndPassword } from 'firebase/auth'
+import { 
+  checkUserStatus, 
+  registerFailedLogin, 
+  resetLoginAttempts, 
+  updateUserStatus 
+} from '@/api/auth.api'
 
 const router = useRouter()
 const email = ref('')
@@ -128,14 +134,72 @@ const statusInfo = ref<any>(null)
 
 const MAX_ATTEMPTS = 3
 
+// Auto-refresh du statut toutes les 5 secondes
+let statusRefreshInterval: any = null
+
+const autoRefreshStatus = async () => {
+  if (!email.value) {
+    if (statusRefreshInterval) {
+      clearInterval(statusRefreshInterval)
+      statusRefreshInterval = null
+    }
+    return
+  }
+
+  // Auto-check toutes les 5 secondes
+  statusRefreshInterval = setInterval(async () => {
+    try {
+      const status = await checkUserStatus(email.value)
+      const wasBlocked = statusInfo.value?.disabled === true
+      const isNowUnblocked = status.disabled === false || status.attempts < MAX_ATTEMPTS
+      
+      // Mettre à jour le statut
+      statusInfo.value = {
+        email: email.value,
+        attempts: status.attempts,
+        disabled: status.disabled
+      }
+      
+      // Si débloqu automatiquement, nettoyer le message d'erreur
+      if (wasBlocked && isNowUnblocked) {
+        error.value = '' // Effacer l'erreur
+        console.log('✅ Compte débloqu! Vous pouvez maintenant vous connecter')
+      }
+    } catch (err) {
+      console.warn('Auto-refresh statut failed:', err)
+    }
+  }, 5000)
+}
+
+// Watch sur l'email pour setup/cleanup l'auto-refresh
+watch(email, (newEmail) => {
+  if (newEmail) {
+    autoRefreshStatus()
+  } else {
+    if (statusRefreshInterval) {
+      clearInterval(statusRefreshInterval)
+      statusRefreshInterval = null
+    }
+  }
+})
+
+// Cleanup quand on quitte la page
+onUnmounted(() => {
+  if (statusRefreshInterval) {
+    clearInterval(statusRefreshInterval)
+  }
+})
+
 const login = async () => {
   error.value = ''
   loading.value = true
 
   try {
     const status = await checkUserStatus(email.value)
-    if (status.disabled || status.attempts >= MAX_ATTEMPTS) {
-      error.value = 'Compte bloqué après plusieurs tentatives. Contactez un administrateur.'
+    
+    // Vérifier UNIQUEMENT le flag disabled de Firebase Auth (source de vérité)
+    if (status.disabled) {
+      error.value = 'Compte bloqué. Contactez un administrateur.'
       statusInfo.value = {
         email: email.value,
         attempts: status.attempts,
@@ -144,9 +208,11 @@ const login = async () => {
       return
     }
 
+    console.log('✅ Compte actif dans Firebase Auth, tentative de login...')
     await signInWithEmailAndPassword(auth, email.value, password.value)
     await resetLoginAttempts(email.value)
     statusInfo.value = null
+    console.log('✅ Login réussi, redirection vers /carte')
     router.push('/carte')
   } catch (err: any) {
     let recorded: { attempts: number; disabled: boolean } | null = null
@@ -237,10 +303,10 @@ const forceDisable = async (disable: boolean) => {
   try {
     loading.value = true
     error.value = ''
-    const result = await updateFirebaseUserStatus(email.value, disable)
+    const result = await updateUserStatus(email.value, disable)
     statusInfo.value = {
       email: email.value,
-      attempts: result.attempts,
+      attempts: 0, // Reset attempts when updating status
       disabled: result.disabled
     }
   } catch (err: any) {

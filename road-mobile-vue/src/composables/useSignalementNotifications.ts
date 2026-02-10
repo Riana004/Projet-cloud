@@ -10,7 +10,7 @@ import {
   limit,
 } from 'firebase/firestore'
 import { LocalNotifications } from '@capacitor/local-notifications'
-import { auth } from '@/firebase/firebase'
+import { auth, getStatusLabel } from '@/firebase/firebase'
 
 export interface SignalementStatusUpdate {
   signalementId: string
@@ -81,12 +81,14 @@ export function useSignalementNotifications() {
             if (change.type === 'added') {
               const newData = change.doc.data() as any
 
+              const ancienId = newData.ancien_statut_id || newData.ancienStatut || null;
+              const nouveauId = newData.nouveau_statut_id || newData.nouveauStatut || newData.statut || null;
               const statusUpdate: SignalementStatusUpdate = {
                 signalementId: newData.signalementId,
-                oldStatus: newData.ancienStatut || 'Non défini',
-                newStatus: newData.statut || newData.nouveauStatut || 'Non défini',
+                oldStatus: ancienId ? getStatusLabel(ancienId) : 'Non défini',
+                newStatus: nouveauId ? getStatusLabel(nouveauId) : 'Non défini',
                 timestamp: new Date(),
-                message: newData.message || `Mise à jour du signalement: ${newData.statut || ''}`,
+                message: newData.message || `Mise à jour du signalement: ${nouveauId ? getStatusLabel(nouveauId) : ''}`,
               }
 
               // Préfixer la liste (récent en premier)

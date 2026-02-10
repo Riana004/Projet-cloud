@@ -13,6 +13,7 @@
           <ion-button @click="showNotifications = true">
             <ion-icon :icon="notificationsOutline"></ion-icon>
           </ion-button>
+          <ion-button color="tertiary" @click.stop.prevent="debugMarkFirst">DBG</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -113,11 +114,24 @@
             v-for="notif in notifications" 
             :key="notif.id"
             button
+            @click="onNotificationClick(notif)"
           >
-            <ion-label>
-              <h3>{{ notif.message }}</h3>
+            <ion-label :style="{ opacity: notif.isRead ? 0.6 : 1 }">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h3 style="margin:0">{{ notif.message }}</h3>
+                <small v-if="notif.isRead" style="color:#888; font-weight:600;">(lu)</small>
+                <small v-else style="color:#c33; font-weight:700;">(nouveau)</small>
+              </div>
               <p>{{ formatDate(notif.timestamp) }}</p>
             </ion-label>
+            <ion-button
+              slot="end"
+              fill="clear"
+              size="small"
+              @click.stop="toggleRead(notif)"
+            >
+              {{ notif.isRead ? 'Marquer non lu' : 'Marquer lu' }}
+            </ion-button>
             <ion-badge slot="end" color="primary">{{ notif.statut }}</ion-badge>
           </ion-item>
         </ion-list>
@@ -127,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import {
@@ -142,7 +156,7 @@ import {
   notificationsOutline,
   closeOutline 
 } from 'ionicons/icons'
-import { auth, getAllSignalements, getUserSignalements, initMessaging, saveFcmToken, onForegroundMessageListener, onAuthStateChangeListener } from '@/firebase/firebase'
+import { auth, getAllSignalements, getUserSignalements, initMessaging, saveFcmToken, onForegroundMessageListener, onAuthStateChangeListener, getStatusLabel } from '@/firebase/firebase'
 import { useGeolocationMap } from '@/composables/useGeolocationMap'
 import { useSignalementNotifications } from '@/composables/useSignalementNotificationsAdvanced'
 
@@ -159,7 +173,9 @@ const {
   notifications, 
   unreadCount, 
   initialize: initNotifications,
-  sendLocalNotification
+  sendLocalNotification,
+  toggleReadPersist,
+  markAsReadPersist
 } = useSignalementNotifications()
 
 // État
@@ -254,11 +270,13 @@ const displaySignalements = () => {
   signalemsToDisplay.forEach(sig => {
     const isMine = auth.currentUser?.uid === sig.id_utilisateur
 
-    // Déterminer la couleur du marqueur
+    // Déterminer la couleur du marqueur (mettre en évidence mes signalements)
     let markerColor = 'blue'
     if (sig.description?.includes('Nid de poule')) markerColor = 'red'
     else if (sig.description?.includes('Feu cassé')) markerColor = 'orange'
     else if (sig.description?.includes('Accident')) markerColor = 'darkred'
+    // Mes signalements en vert pour les repérer et cliquer pour voir le détail
+    if (isMine) markerColor = 'green'
 
     const iconUrl = `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${markerColor}.png`
 
@@ -282,13 +300,26 @@ const displaySignalements = () => {
           ${sig.description?.substring(0, 50) || 'Pas de description'}...
         </p>
         <small style="color: #999;">
-          Statut: ${sig.id_statut || 'En attente'}<br>
+          Statut: ${getStatusLabel(sig.id_status_signalement) || 'En attente'}<br>
           ${isMine ? '<strong style="color: #0070cc;">C\'est mon signalement</strong>' : ''}
         </small>
       </div>
     `
 
     marker.bindPopup(popupContent)
+
+    // Si c'est mon signalement, cliquer ouvre directement le détail
+    marker.on('click', () => {
+      try {
+        if (isMine) {
+          showNotifications.value = false
+          router.push(`/signalement/${sig.id}`)
+          return
+        }
+      } catch (e) { /* ignore */ }
+      // sinon, ouvrir le popup
+      try { marker.openPopup() } catch (e) { /* ignore */ }
+    })
 
     markers.value.set(sig.id, marker)
   })
@@ -325,6 +356,58 @@ const formatDate = (timestamp: any) => {
     hour: '2-digit',
     minute: '2-digit'
   }).format(date)
+}
+
+// Toggle read/unread with optimistic UI update
+const toggleRead = async (notif: any) => {
+  try {
+    const toRead = !notif.isRead
+    console.log('[ui] toggleRead clicked', notif.id, 'toRead=', toRead)
+    // optimistic update
+    try {
+      if (notif.isRead !== toRead) {
+        notif.isRead = toRead
+        if (toRead) unreadCount.value = Math.max(0, unreadCount.value - 1)
+        else unreadCount.value = unreadCount.value + 1
+      }
+    } catch (e) { /* ignore */ }
+    const res = await toggleReadPersist(notif.id, toRead)
+    console.log('[ui] toggleReadPersist result', res)
+    if (!res || res.ok === false) {
+      console.warn('toggleReadPersist failed', res)
+    }
+  } catch (e) {
+    console.warn('toggleRead failed', e)
+  }
+}
+
+// Clicking a notification: mark read (no navigation)
+const onNotificationClick = async (notif: any) => {
+  try {
+    console.log('[ui] onNotificationClick', notif.id, 'isRead=', notif.isRead)
+    if (!notif.isRead) {
+      // optimistic
+      try { notif.isRead = true; unreadCount.value = Math.max(0, unreadCount.value - 1) } catch {}
+      const res = await markAsReadPersist(notif.id)
+      console.log('[ui] markAsReadPersist result', res)
+      try { await nextTick() } catch {}
+    }
+    // no automatic navigation to signalement
+  } catch (e) {
+    console.warn('onNotificationClick markAsRead failed', e)
+  }
+}
+
+// temporary debug helper
+const debugMarkFirst = async () => {
+  try {
+    const n = (notifications.value || [])[0]
+    if (!n) return console.log('no notif')
+    console.log('[ui-debug] debugMarkFirst', n.id, 'isRead=', n.isRead)
+    try { n.isRead = true; unreadCount.value = Math.max(0, unreadCount.value - 1) } catch {}
+    const res = await markAsReadPersist(n.id)
+    console.log('[ui-debug] markAsReadPersist', res)
+  } catch (e) { console.error('debugMarkFirst failed', e) }
 }
 
 // Cycle de vie

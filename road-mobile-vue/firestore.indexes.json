@@ -2,58 +2,34 @@
   "indexes": [
     {
       "collectionGroup": "signalements",
-      "queryScope": "Collection",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "id_utilisateur",
-          "order": "Ascending"
-        },
-        {
-          "fieldPath": "date_signalement",
-          "order": "Descending"
-        }
+        { "fieldPath": "id_utilisateur", "order": "ASCENDING" },
+        { "fieldPath": "date_signalement", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "photos",
-      "queryScope": "Collection",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "id_signalement",
-          "order": "Ascending"
-        },
-        {
-          "fieldPath": "date_ajout",
-          "order": "Descending"
-        }
+        { "fieldPath": "id_signalement", "order": "ASCENDING" },
+        { "fieldPath": "date_ajout", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "notifications",
-      "queryScope": "Collection",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "Ascending"
-        },
-        {
-          "fieldPath": "timestamp",
-          "order": "Descending"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "statut_changes",
-      "queryScope": "Collection",
+      "collectionGroup": "avancement",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "signalementId",
-          "order": "Ascending"
-        },
-        {
-          "fieldPath": "dateChangement",
-          "order": "Descending"
-        }
+        { "fieldPath": "signalementId", "order": "ASCENDING" },
+        { "fieldPath": "date_modification", "order": "DESCENDING" }
       ]
     }
   ],
